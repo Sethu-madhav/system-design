@@ -29,12 +29,12 @@ Create exactly these 15 files:
 | `src/vite-env.d.ts` | Vite's types, so `tsc` knows `import.meta.glob` |
 | `src/scene/index.ts` | The only import path into `src/scene` from outside it |
 | `src/scene/layout.ts` | Grid constants and `lintLayout` |
-| `src/scene/layout.test.ts` | 3 tests |
+| `src/scene/layout.test.ts` | 4 tests |
 | `src/content/quiz.ts` | Quiz types, `checkQuiz` and `shuffledOrder` |
 | `src/content/quiz.test.ts` | 8 tests |
 | `src/content/lesson.ts` | `defineLesson`, `finishLesson` and the lesson types |
 | `src/content/curriculum.ts` | `TRACKS`, `buildCurriculum`, `neighbors` and `curriculum` |
-| `src/content/curriculum.test.ts` | 10 tests |
+| `src/content/curriculum.test.ts` | 11 tests |
 | `src/content/author.ts` | The three functions a lesson file may use |
 | `src/content/index.ts` | The only import path into `src/content` from outside it |
 | `src/content/lessons/load-balancer/lesson.ts` | The first lesson |
@@ -91,6 +91,7 @@ Each test builds a scene inline with `defineScene` and `compile`, imported from 
 1. `edge through a third node is reported`. Nodes `a` at `[0, 0]`, `m` at `[1, 0]` and `b` at `[2, 0]`, with one send from `a` to `b`, give exactly `["edge a~b crosses m"]`. Moving `m` to `[1, 1]` and `b` to `[2, 2]` gives the same result.
 2. `edge that clears every node is not reported`. Nodes `a` at `[0, 0]`, `m` at `[1, 1]` and `b` at `[2, 1]`, with one send from `a` to `b`, give `[]`.
 3. `node outside the 8 by 5 grid is reported`. A node `m` at `[8, 0]` gives `"m is outside the grid"`. So does a node `m` at `[0, 5]`.
+4. `edge that passes near a node's center is reported`. Nodes `a` at `[0, 0]`, `m` at `[1, 0]` and `b` at `[3, 1]`, with one send from `a` to `b`, give exactly `["edge a~b crosses m"]`. The edge misses `m`'s center but passes through its box. The case fails if either box dimension is halved.
 
 ### `src/content/quiz.ts` (new)
 
@@ -155,7 +156,7 @@ Use these exact test names:
 1. `checkQuiz accepts a valid quiz`. A quiz with one `choice`, one `multi` and one `order` question, each valid, gives `[]`.
 2. `checkQuiz: choice with 2 correct`. It reports `"question 1: choice needs exactly 1 correct option"`.
 3. `choice with 0 correct`. Same message.
-4. `multi with all correct`. It reports `"question 1: multi needs at least 1 correct and 1 wrong option"`.
+4. `multi with all or no correct`. A `multi` question where every option is correct reports `"question 1: multi needs at least 1 correct and 1 wrong option"`. So does a `multi` question where no option is correct.
 5. `order with 2 items`. It reports `"question 1: order needs at least 3 items"`.
 6. `fewer than 3 questions`. A quiz with 2 valid questions gives exactly `["quiz needs at least 3 questions"]`.
 7. `duplicate prompt, repeated item and single option are reported`. A quiz of 3 questions has:
@@ -344,6 +345,7 @@ Import `buildCurriculum`, `neighbors` and `type TrackId` from `./curriculum`. Us
     - its heading ids are `what-it-does`, `how-it-picks-a-server` and `horizontal-scaling`;
     - it has one attribution, whose `text` is `Adapted from "Load balancer" in The System Design Primer by Donne Martin.`;
     - it has two `furtherReading` entries.
+11. `finishLesson counts reading and scene time and defaults tags`. `buildCurriculum({ [key("a")]: { default: { ...baseDraft, body: { ...baseDraft.body, words: 200 } } } })` gives lesson `a` with `minutes` 2, because 200 words is one minute and the scene adds a fraction of one. With `words: 400` the result is 3. `baseDraft.tags` equals `[]`.
 
 ### `src/content/author.ts` (new)
 
@@ -489,8 +491,8 @@ Use these exact test names:
 Run each one from the worktree root and paste its full output in your report:
 
 1. `pnpm install`
-2. `pnpm build`. Its Vitest run of `src/content` shows 61 tests before the Vite build.
-3. `pnpm test`, which shows 11 files and 139 tests passing.
+2. `pnpm build`. Its Vitest run of `src/content` shows 62 tests before the Vite build.
+3. `pnpm test`, which shows 11 files and 141 tests passing.
 4. `pnpm e2e`, which shows 4 tests passing.
 
 ## Prove the type test works
