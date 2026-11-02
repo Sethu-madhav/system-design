@@ -10,7 +10,7 @@
 
 ## pstack
 
-pstack is vendored at `vendor/pstack/` (gitignored; recreate or update with `scripts/sync-pstack.sh`).
+pstack is vendored and committed at `vendor/pstack/`. To update it, run `scripts/sync-pstack.sh` and commit the result as its own commit. Do not delete or regenerate `vendor/pstack/` as part of other work.
 
 - Skills: `.claude/skills` is a symlink to `vendor/pstack/skills`. Skills marked `disable-model-invocation: true` (e.g. `/architect`, `/poteto-mode`) load only when invoked by name as a slash command.
 - Subagents: `.claude/agents/poteto-agent.md` and `.claude/agents/comment-sicko.md` are Claude Code ports of the pstack agents.

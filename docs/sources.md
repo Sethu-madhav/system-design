@@ -2,7 +2,7 @@
 
 The app's lessons are original text. Facts and concepts, such as how consistent hashing works, are not protected by copyright. The wording, the diagrams, and the structure of a source are. Each source below has a rule that says what a lesson may take from it.
 
-Data checked on 2026-11-01 from `https://api.github.com/repos/<owner>/<repo>` and each repo's license file.
+Stars and license types come from `https://api.github.com/repos/<owner>/<repo>`, checked on 2026-11-01. GitHub reported `NOASSERTION` for the primer, `system-design-101`, and `karanpratapsingh/system-design`, so their license types come from reading their license files.
 
 ## Sources
 
@@ -22,13 +22,13 @@ Data checked on 2026-11-01 from `https://api.github.com/repos/<owner>/<repo>` an
 
 **Link.** A lesson may link the source in its further-reading list. MIT allows copying with the notice kept, but no lesson needs more than a link.
 
-**Link only.** A lesson may link the source in its further-reading list. A lesson does not copy or paraphrase the source's text, diagrams, or structure.
+**Link only.** A lesson may link the source in its further-reading list. A lesson does not copy or paraphrase the source's text, diagrams, or structure. A redrawn version of a source's diagram counts as an adaptation, so lesson animations do not recreate a diagram from a "Link only" repo.
 - CC BY-NC-ND forbids sharing adapted versions.
-- GPL-3.0 would put any copied text under GPL-3.0.
+- GPL-3.0 would put any copied text under GPL-3.0 once the app is public. Phase 8 deploys it.
 - A repo with no license grants no rights beyond viewing it on GitHub.
 
 **AlgoMaster.** [algomaster.io](https://algomaster.io/learn/system-design) is a product reference for the kind of site we are building. The app does not copy its text, layout, diagrams, or animations.
 
 ## Who enforces the rules
 
-Step 3 of the plan, the content pipeline, will add a required `sources` field to every lesson's frontmatter. Each entry will name a repo from the table above. The build will fail if a lesson cites a "Link only" repo as an adapted source.
+Step 3 of the plan, the content pipeline, will add a required `sources` field to every lesson's frontmatter. Each entry will name a repo from the table above. The build will fail if a lesson cites a "Link only" repo as an adapted source. That check reads only the frontmatter, so it cannot catch a paraphrase. Opus compares each lesson against its sources during the content review in Phase 6.
