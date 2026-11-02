@@ -12,7 +12,7 @@ function randomStrings(count: number): string[] {
   const chars = "#/%abcdefghijklmnopqrstuvwxyz0123456789 .?&="
   let seed = 42
   const next = () => {
-    seed = (seed * 1103515245 + 12345) % 2147483648
+    seed = (seed * 16807) % 2147483647
     return seed
   }
   const values: string[] = []
@@ -96,7 +96,10 @@ describe("parseRoute", () => {
 
   test("parseRoute never throws on 200 random strings", () => {
     const names = ["home", "lesson", "not-found"]
-    for (const value of randomStrings(200)) {
+    const values = randomStrings(200)
+    expect(values.join("")).toContain("/")
+    expect(values.join("")).toContain("%")
+    for (const value of values) {
       expect(names).toContain(parseRoute(value).name)
     }
   })

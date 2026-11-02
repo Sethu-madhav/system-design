@@ -86,11 +86,7 @@ function getSnapshot(): string {
   return window.location.hash
 }
 
-function getServerSnapshot(): string {
-  return ""
-}
-
 export function useRoute(): Route {
-  const hash = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
+  const hash = useSyncExternalStore(subscribe, getSnapshot)
   return useMemo(() => parseRoute(hash), [hash])
 }
