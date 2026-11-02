@@ -69,7 +69,7 @@ The three modes:
 | `toggle` | From `paused`, it gives `{ mode: "playing", t }`. If `t >= duration`, it restarts from 0 instead, so the result is `{ mode: "playing", t: 0 }`. From `playing` or `stepping`, it gives paused at `t`. |
 | `pause` | Paused at `t`, from any mode. |
 | `tick` | If the mode is `paused`, or `dt` is not greater than 0 (this includes `NaN`), return the same `state` object unchanged. Otherwise let `next = t + dt`. In `playing`, `next >= duration` gives paused at `duration`, and anything else gives `{ mode: "playing", t: next }`. In `stepping`, `next >= stopAt` gives paused at `stopAt`, and anything else gives the same mode and `stopAt` with `t: next`. |
-| `next` | Let `i = stepIndexAt(timeline, t)`. If `i` is `last`, the result is paused at `duration`. Otherwise it is stepping step `i + 1`. |
+| `next` | Let `i = stepIndexAt(timeline, t)`. If `t` equals `steps[i].start`, the target is `i`. Otherwise the target is `i + 1`. If the target is past `last`, the result is paused at `duration`. Otherwise it is stepping the target step. Stepping pauses at a step's end, which is the next step's start, so pressing next again plays that next step and never skips one. |
 | `prev` | Let `i = stepIndexAt(timeline, t)`. If `i > 0` and `t - steps[i].start < RESTART_GRACE_MS`, the result is paused at `steps[i - 1].start`. Otherwise it is paused at `steps[i].start`. |
 | `seek` | Paused at `event.t`, clamped to between 0 and `duration`. `NaN` becomes 0. |
 | `goto` | Stepping step `k`. To get `k`, `NaN` becomes 0, then `Math.trunc` drops the fraction, then the result is clamped to between 0 and `last`. |
@@ -92,19 +92,20 @@ Vitest, node environment. Import `fixture` from `./fixtures` and use it for ever
 6. `tick advances t only when not paused`. Playing at 100 with `dt` 16 gives playing at 116. Paused at 100 with `dt` 16 returns the same object, checked with `toBe`.
 7. `tick ignores a dt that is not positive`. Playing at 100 with `dt` 0, with `dt` -5 and with `dt` `NaN` each return the same object, checked with `toBe`.
 8. `playing stops and pauses at duration`. Playing at 7000 with `dt` 500 gives paused at 7240. Playing at 7000 with `dt` 240 also gives paused at 7240.
-9. `stepping stops at stopAt`. Stepping at 1600 with `stopAt` 3440 and `dt` 1000 gives stepping at 2600 with `stopAt` 3440. A second tick of 1000 gives paused at 3440.
+9. `stepping stops at stopAt`. Stepping at 1600 with `stopAt` 3440 and `dt` 1000 gives stepping at 2600 with `stopAt` 3440. A second tick of 1000 gives paused at 3440, and so does a second tick of exactly 840.
 10. `next from step 1 -> stepping at step 2 start with stopAt step 2 end`. Paused at 2000 gives `{ mode: "stepping", t: 3440, stopAt: 5640 }`.
-11. `next exactly at a step start moves to the following step`. Paused at 1600 gives stepping at 3440 with `stopAt` 5640.
-12. `next on the last step goes to duration paused`. Paused at 6000 gives paused at 7240. Paused at 7240 also gives paused at 7240.
-13. `prev within grace goes to the previous step start`. Paused at 2199 gives paused at 0.
-14. `prev after grace goes to this step's start`. Paused at 2200 gives paused at 1600. Playing at 7000 gives paused at 5640.
-15. `prev at 0 stays at 0`. Paused at 0 and paused at 300 both give paused at 0.
-16. `seek clamps and pauses`. From playing at 100, a seek to 3000 gives paused at 3000. Seeks to -10, to 1e9 and to `NaN` give paused at 0, 7240 and 0.
-17. `seek twice equals seek once`. From playing at 100, applying a seek to 3000 twice equals applying it once.
-18. `goto plays exactly that step`. A goto of 2 from paused at 0 gives stepping at 3440 with `stopAt` 5640. A tick of 2000 gives stepping at 5440. A tick of 1000 then gives paused at 5640, not later.
-19. `goto clamps the step index`. Gotos of -1, 99, 1.7 and `NaN` give stepping step 0, 3, 1 and 0.
-20. `first/last`. From playing at 3000, `first` gives paused at 0 and `last` gives paused at 7240.
-21. `every event keeps t inside the timeline`. Starting from `initialPlayer`, apply 2000 random events. Use the Park-Miller generator with seed 42, `seed = (seed * 16807) % 2147483647`. Pick each event type with equal chance. A seek's `t` is between -500 and 9000, a goto's `step` is between -1 and 5, and a tick's `dt` is between -50 and 350. After every event, check these three things:
+11. `next exactly at a step start plays that step`. Paused at 1600 gives stepping at 1600 with `stopAt` 3440. `initialPlayer` gives stepping at 0 with `stopAt` 1600.
+12. `next after each step finishes plays every step in order`. From `initialPlayer`, press next five times. After each press, tick by 16 until paused. The stepping starts are 0, 1600, 3440 and 5640, and the final state is paused at 7240.
+13. `next on the last step goes to duration paused`. Paused at 6000 gives paused at 7240. Paused at 7240 also gives paused at 7240.
+14. `prev within grace goes to the previous step start`. Paused at 2199 gives paused at 0.
+15. `prev after grace goes to this step's start`. Paused at 2200 gives paused at 1600. Playing at 7000 gives paused at 5640.
+16. `prev at 0 stays at 0`. Paused at 0 and paused at 300 both give paused at 0.
+17. `seek clamps and pauses`. From playing at 100, a seek to 3000 gives paused at 3000. Seeks to -10, to 1e9 and to `NaN` give paused at 0, 7240 and 0.
+18. `seek twice equals seek once`. From playing at 100, applying a seek to 3000 twice equals applying it once.
+19. `goto plays exactly that step`. A goto of 2 from paused at 0 gives stepping at 3440 with `stopAt` 5640. A tick of 2000 gives stepping at 5440. A tick of 1000 then gives paused at 5640, not later.
+20. `goto clamps the step index`. Gotos of -1, 99, 1.7 and `NaN` give stepping step 0, 3, 1 and 0.
+21. `first/last`. From playing at 3000, `first` gives paused at 0 and `last` gives paused at 7240.
+22. `every event keeps t inside the timeline`. Starting from `initialPlayer`, apply 2000 random events. Use the Park-Miller generator with seed 42, `seed = (seed * 16807) % 2147483647`. Pick each event type with equal chance. A seek's `t` is between -500 and 9000, a goto's `step` is between -1 and 5, and a tick's `dt` is between -50 and 350. After every event, check these three things:
     - `t` is a finite number from 0 to 7240;
     - in `stepping`, `stopAt` is one of the fixture's step ends;
     - in `stepping`, `t` is less than `stopAt`.
@@ -117,7 +118,7 @@ Run each one from the worktree root and paste its full output in your report:
 
 1. `pnpm install`
 2. `pnpm build`
-3. `pnpm test`, which shows 6 files and 104 tests passing.
+3. `pnpm test`, which shows 6 files and 105 tests passing.
 4. `pnpm e2e`, which shows 4 tests passing.
 
 ## Done means

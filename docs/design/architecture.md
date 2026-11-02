@@ -95,7 +95,7 @@ const { active, play } = useSceneCue(node.step)
 const tl = compile(defineScene({ ... }).steps((s) => ({ ... })))  // or lesson.timeline, already compiled
 expect(frameAt(tl, tl.steps[1].start + LEAD_MS + SEND_MS / 2, "full").packets[0].u).toBeCloseTo(0.5, 1)
 expect(frameAt(tl, tl.steps[1].start + 10, "reduced").packets).toEqual([])
-expect(reducePlayer(tl, { mode: "paused", t: 0 }, { type: "next" })).toEqual({ mode: "stepping", t: tl.steps[1].start, stopAt: tl.steps[1].end })
+expect(reducePlayer(tl, { mode: "paused", t: 0 }, { type: "next" })).toEqual({ mode: "stepping", t: tl.steps[0].start, stopAt: tl.steps[0].end })
 ```
 
 ## Shape
