@@ -24,11 +24,13 @@ Stars and license types come from `https://api.github.com/repos/<owner>/<repo>`,
 
 **Link only.** A lesson may link the source in its further-reading list. A lesson does not copy or paraphrase the source's text, diagrams, or structure. A redrawn version of a source's diagram counts as an adaptation, so lesson animations do not recreate a diagram from a "Link only" repo.
 - CC BY-NC-ND forbids sharing adapted versions.
-- GPL-3.0 would put any copied text under GPL-3.0 once the app is public. Phase 8 deploys it.
+- GPL-3.0 would put any copied text under GPL-3.0 once the app is public. Step 15 deploys it.
 - A repo with no license grants no rights beyond viewing it on GitHub.
 
 **AlgoMaster.** [algomaster.io](https://algomaster.io/learn/system-design) is a product reference for the kind of site we are building. The app does not copy its text, layout, diagrams, or animations.
 
 ## Who enforces the rules
 
-Step 3 of the plan, the content pipeline, will add a required `sources` field to every lesson's frontmatter. Each entry will name a repo from the table above. The build will fail if a lesson cites a "Link only" repo as an adapted source. That check reads only the frontmatter, so it cannot catch a paraphrase. Opus compares each lesson against its sources during the content review in Phase 6.
+`src/content/sources.ts` holds the same table as code. Step 3 of `docs/plan.md` adds it. A test reads this file during `pnpm build` and fails the build if the two tables disagree. So a change to the table above needs the same change in `sources.ts`.
+
+From step 7, every lesson has a required `sources` field. A lesson that cites a "Link only" or "Link" repo as adapted does not compile. That check reads only the `sources` field, so it cannot catch a paraphrase. Opus compares each lesson against its sources when it reviews the lesson.
