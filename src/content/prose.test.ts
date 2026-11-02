@@ -378,4 +378,38 @@ A **bold** *em* \`code\` [link](https://example.com) ${cue("go", "cue text")}.
     expect(prose.blocks[0]).toMatchObject({ t: "h", id: "what-it-does" })
     expect(prose.blocks[9]).toMatchObject({ t: "callout", kind: "tradeoff" })
   })
+
+  test("code keeps backslashes", () => {
+    const prose = md`
+      \`\`\`ts
+      const s = "a\nb"
+      const r = /\d+/
+      \`\`\`
+
+      Escape a \`\\\` in text.
+    `
+    expect(prose.blocks).toEqual([
+      { t: "code", lang: "ts", v: 'const s = "a\\nb"\nconst r = /\\d+/' },
+      { t: "p", c: [{ t: "text", v: "Escape a " }, { t: "code", v: "\\" }, { t: "text", v: " in text." }] },
+    ])
+  })
+
+  test("cue inside a link url throws", () => {
+    expect(() => md`[a](https://x.com/${cue("a", "A")}) then ${cue("b", "B")}`).toThrow("cue inside link url")
+  })
+
+  test("link url with a space or parenthesis throws", () => {
+    expect(() => md`[x](https://x.com/a b)`).toThrow("space or parenthesis")
+    expect(() => md`[w](https://en.wikipedia.org/wiki/A_(b))`).toThrow("space or parenthesis")
+  })
+
+  test("emphasis markers inside code spans do not close emphasis", () => {
+    expect(md`**see \`a**b\` here**`.blocks).toEqual([
+      { t: "p", c: [{ t: "strong", c: [{ t: "text", v: "see " }, { t: "code", v: "a**b" }, { t: "text", v: " here" }] }] },
+    ])
+    expect(md`[see \`a]\` x](https://x.com)`.blocks).toEqual([
+      { t: "p", c: [{ t: "link", href: "https://x.com", c: [{ t: "text", v: "see " }, { t: "code", v: "a]" }, { t: "text", v: " x" }] }] },
+    ])
+    expect(() => md`*a **b** c*`).toThrow("unclosed emphasis")
+  })
 })

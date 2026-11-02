@@ -59,6 +59,25 @@ function isHeading(line: string): boolean {
   return line.startsWith("## ") || line.startsWith("### ")
 }
 
+function isCalloutKind(text: string): text is CalloutKind {
+  return text === "note" || text === "tradeoff" || text === "pitfall"
+}
+
+function findClose(src: string, marker: string, from: number): number {
+  let i = from
+  while (i < src.length) {
+    if (src[i] === "`") {
+      const end = src.indexOf("`", i + 1)
+      if (end === -1) return -1
+      i = end + 1
+      continue
+    }
+    if (src.startsWith(marker, i)) return i
+    i += 1
+  }
+  return -1
+}
+
 export function makeCue<S extends string>(): CueFn<S> {
   return (step, text) => {
     const token = Object.freeze({}) as CueToken<S>
@@ -138,13 +157,13 @@ function parseInlines(src: string, line: string, state: ParseState): Inline[] {
     if (ch === "*") {
       flush()
       if (src[i + 1] === "*") {
-        const end = src.indexOf("**", i + 2)
+        const end = findClose(src, "**", i + 2)
         if (end === -1) fail("unclosed emphasis")
         out.push({ t: "strong", c: parseInlines(src.slice(i + 2, end), line, state) })
         i = end + 2
       } else {
-        const end = src.indexOf("*", i + 1)
-        if (end === -1) fail("unclosed emphasis")
+        const end = findClose(src, "*", i + 1)
+        if (end === -1 || src[end + 1] === "*") fail("unclosed emphasis")
         out.push({ t: "em", c: parseInlines(src.slice(i + 1, end), line, state) })
         i = end + 1
       }
@@ -152,12 +171,14 @@ function parseInlines(src: string, line: string, state: ParseState): Inline[] {
     }
     if (ch === "[") {
       flush()
-      const close = src.indexOf("]", i + 1)
+      const close = findClose(src, "]", i + 1)
       if (close === -1) fail(`unsupported syntax "${line}"`)
       if (src[close + 1] !== "(") fail(`unsupported syntax "${line}"`)
       const paren = src.indexOf(")", close + 2)
       if (paren === -1) fail(`unsupported syntax "${line}"`)
       const href = src.slice(close + 2, paren)
+      if (href.includes(CUE)) fail("cue inside link url")
+      if (/[\s(]/.test(href)) fail(`link url has a space or parenthesis "${href}"`)
       if (!href.startsWith("https://") && !href.startsWith("#/")) {
         fail("link must start with https:// or #/")
       }
@@ -241,9 +262,7 @@ function checkUnsupported(segments: readonly Segment[]): void {
       const trimmed = line.trimStart()
       const unsupported = `unsupported syntax "${trimmed}"`
       if (trimmed.startsWith("|")) fail(unsupported)
-      if (trimmed.startsWith("#") && !trimmed.startsWith("## ") && !trimmed.startsWith("### ")) {
-        fail(unsupported)
-      }
+      if (trimmed.startsWith("#") && !isHeading(trimmed)) fail(unsupported)
       if (trimmed.startsWith("* ") || trimmed.startsWith("+ ")) fail(unsupported)
       const plain = trimmed.replace(/`[^`]*`/g, "")
       if (plain.includes("![")) fail(unsupported)
@@ -268,15 +287,12 @@ function parseHeading(
 
 function parseList(lines: readonly string[], ordered: boolean, state: ParseState): Block {
   const sources: string[] = []
+  const markerPattern = ordered ? /^\d+\. / : /^- /
 
   for (const line of lines) {
-    const marker = ordered ? /^\d+\. /.exec(line) : null
-    if (ordered && marker !== null) {
+    const marker = markerPattern.exec(line)
+    if (marker !== null) {
       sources.push(line.slice(marker[0].length))
-      continue
-    }
-    if (!ordered && line.startsWith("- ")) {
-      sources.push(line.slice(2))
       continue
     }
     if (/^\s/.test(line)) {
@@ -299,9 +315,8 @@ function parseList(lines: readonly string[], ordered: boolean, state: ParseState
 function parseCallout(lines: readonly string[], state: ParseState): Block {
   const first = lines[0]
   const match = /^> (note|tradeoff|pitfall): /.exec(first)
-  if (match === null) fail(`unknown callout kind "${first}"`)
-  const kindText = match[1]
-  if (kindText !== "note" && kindText !== "tradeoff" && kindText !== "pitfall") {
+  const kindText = match?.[1]
+  if (match === null || kindText === undefined || !isCalloutKind(kindText)) {
     fail(`unknown callout kind "${first}"`)
   }
   const parts = [first.slice(match[0].length)]
@@ -337,7 +352,12 @@ function parseGroup(lines: readonly string[], state: ParseState, ids: Set<string
   return parseParagraph(lines, state)
 }
 
-export function md(strings: TemplateStringsArray, ...cues: CueToken[]): Prose {
+function unescapeRaw(raw: string): string {
+  return raw.replace(/\\([`$\\])/g, "$1")
+}
+
+export function md(template: TemplateStringsArray, ...cues: CueToken[]): Prose {
+  const strings = template.raw.map(unescapeRaw)
   for (const part of strings) {
     if (part.includes(CUE)) fail("reserved character in text")
   }
@@ -368,6 +388,8 @@ export function md(strings: TemplateStringsArray, ...cues: CueToken[]): Prose {
       blocks.push(parseGroup(segment.lines, state, ids))
     }
   }
+
+  if (state.next !== records.length) fail("cue was not placed in the text")
 
   let words = 0
   for (const block of blocks) {
