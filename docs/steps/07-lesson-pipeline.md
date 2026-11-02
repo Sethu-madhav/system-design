@@ -170,7 +170,7 @@ Use these exact test names:
    - it is not `0, 1, ..., n - 1`;
    - a second call with the same arguments gives an equal result.
 
-   Also check that `shuffledOrder(0, "a")` is `[]` and `shuffledOrder(1, "a")` is `[0]`.
+   Also check that `shuffledOrder(0, "a")` is `[]` and `shuffledOrder(1, "a")` is `[0]`. Pin two exact results, so the algorithm cannot change unnoticed. `shuffledOrder(5, "load-balancer:3")` is `[1, 0, 2, 3, 4]` and `shuffledOrder(8, "a")` is `[2, 3, 1, 0, 7, 6, 4, 5]`.
 
 ### `src/content/lesson.ts` (new)
 
@@ -226,7 +226,7 @@ export function finishLesson(slug: string, draft: LessonDraft): Lesson
 1. `timeline = compile(input.scene)`. A scene problem throws `SceneError`.
 2. `body = input.body({ cue: makeCue<S>() })`.
 3. `problems = checkQuiz(input.quiz)`. If there are any, throw an `Error` whose message is `` `lesson "${input.title}": ${problems.join("; ")}` ``.
-4. Return a `LessonDraft` with every input field except `scene`, plus `body` and `timeline`. `tags` defaults to `[]`.
+4. Return a `LessonDraft` with every input field except `scene`, plus `body` and `timeline`. `tags` defaults to `[]`. Build it with a rest spread, `const { scene, body, tags, ...rest } = input`, then `{ ...rest, tags: tags ?? [], body: ..., timeline }`. Do not copy fields one by one, so a field added later cannot be dropped.
 
 **`finishLesson(slug, draft)`** returns the draft plus these fields:
 
@@ -275,7 +275,7 @@ export interface Neighbors {
   readonly next?: Lesson
 }
 
-export function buildCurriculum(modules: Record<string, { readonly default: LessonDraft }>): Curriculum
+export function buildCurriculum(modules: Record<string, { readonly default?: LessonDraft }>): Curriculum
 export function neighbors(curriculum: Curriculum, slug: string): Neighbors
 
 export const curriculum = buildCurriculum(
@@ -288,6 +288,7 @@ export const curriculum = buildCurriculum(
 1. For each key in order:
    - It must match `/^\.\/lessons\/([^/]+)\/lesson\.ts$/`, or throw `` `unexpected lesson path ${key}` ``.
    - The captured folder name is the slug. It must match `/^[a-z0-9]+(-[a-z0-9]+)*$/`, or throw `` `lesson folder ${slug} is not kebab-case` ``.
+   - If `module.default` is `undefined`, throw `` `${key} has no default export` ``. The glob's type argument is not checked at runtime, so a lesson file that forgets `export default` must fail with its path in the message.
    - Call `finishLesson(slug, module.default)`.
 2. For each track in `TRACKS` order, take its lessons sorted by `order`, smallest first. Fractions such as 2.5 are allowed, so a lesson can go between two others without renumbering. If two lessons in one track have the same `order`, throw `` `${first} and ${second} share order ${order} in track ${trackId}` ``, where `first` and `second` are the slugs in key order.
 3. `tracks` lists only the tracks that have lessons, as `{ id, title, lessons }`.
@@ -328,7 +329,7 @@ const key = (slug: string) => `./lessons/${slug}/lesson.ts`
 Import `buildCurriculum`, `neighbors` and `type TrackId` from `./curriculum`. Use these exact test names:
 
 1. `slug comes from folder`. The key `./lessons/dns-basics/lesson.ts` gives a lesson whose `slug` is `dns-basics`.
-2. `non-kebab folder throws`. The folders `DnsBasics`, `dns_basics` and `dns--basics` each throw `is not kebab-case`. A key outside `./lessons/` throws `unexpected lesson path`.
+2. `non-kebab folder throws`. The folders `DnsBasics`, `dns_basics` and `dns--basics` each throw `is not kebab-case`. A key outside `./lessons/` throws `unexpected lesson path`. `buildCurriculum({ [key("x")]: {} })` throws exactly `./lessons/x/lesson.ts has no default export`.
 3. `tracks in TRACKS order`. Lessons in `data`, `foundations` and `edge`, passed in that key order, give track ids `foundations`, `edge` and `data`.
 4. `lessons sorted by order, fractions allowed`. Orders 3, 1 and 2.5 in one track come out as 1, 2.5 and 3.
 5. `empty tracks omitted`. One lesson in `cache` gives exactly one track.
@@ -451,7 +452,7 @@ TypeScript cannot hide a file, so this test scans imports instead. Write a pure 
 
 The modules are `content`, `scene`, `progress` and `search`. A path is in module `m` when it is exactly `src/m` or starts with `src/m/`. A test file is a path that ends in `.test.ts`.
 
-Find import specifiers with `/\b(?:from|import)\s*\(?\s*["']([^"']+)["']/g`. That matches `from "x"`, `import "x"` and `import("x")`. Resolve each specifier to a target path:
+Find import specifiers with TypeScript's own scanner. `import ts from "typescript"`, then `ts.preProcessFile(text, true, true).importedFiles.map((f) => f.fileName)`. It finds `import ... from "x"` across several lines, `export ... from "x"`, `import "x"` and `import("x")`. It skips text inside strings, template literals and comments, so lesson prose such as `comes from "Some Book"` is not an import. Do not use a regex for imports. Resolve each specifier to a target path:
 
 - `@/rest` resolves to `src/rest`.
 - `./x` or `../x` resolves against the file's folder with `path.posix.join(path.posix.dirname(file), spec)`.
@@ -478,7 +479,7 @@ Use these exact test names:
 4. `index imports and test files are allowed`. These two files report nothing:
    - `src/app/x.tsx` importing `@/content`, `@/scene` and `../scene/index`;
    - `src/app/x.test.ts` importing `@/scene/timeline`.
-5. `lesson file importing anything but @/content/author is reported`. `src/content/lessons/x/lesson.ts` importing `@/content/author` and `react` reports only the `react` line.
+5. `lesson file importing anything but @/content/author is reported`. `src/content/lessons/x/lesson.ts` importing `@/content/author` and `react` reports only the `react` line. The same path with `import { md } from "@/content/author"` and then ``const b = md`This comes from "Some Book".` `` reports nothing.
 6. `scene importing content is reported`. `src/scene/x.ts` with `import { md } from "@/content"` reports `src/scene/x.ts is in src/scene and imports @/content from src/content`.
 7. `defineRecipe outside a top-level ink recipe is reported`. Three cases, checked with `toEqual`:
    - `src/lib/ink/recipes/x.ts` with `export const r = defineRecipe({` reports nothing;
