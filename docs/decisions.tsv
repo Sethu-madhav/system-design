@@ -27,3 +27,4 @@ ts	phase	decision	why	evidence	result
 2026-11-02T04:21:01Z	step-1	user approved the step 1 spec; coding goes to a new DeepSeek thread in its own worktree	user asked for a new thread and a merge once review is clean	docs/steps/01-test-tooling.md	open
 2026-11-02T04:29:26Z	step-1	verified DeepSeek's step 1, fixed 3 review findings myself, merged into local main	tests pass and fail on planted bugs; gh has no login on this Mac so no GitHub PR was possible	commits b2229d4 ac10127 9080804; ~/.config/gh missing	merged locally, not pushed
 2026-11-02T04:34:06Z	step-1	logged gh in on this Mac, pushed main, opened and merged PR #1	user asked to set up GitHub properly; earlier row said gh had no login, which this supersedes	https://github.com/Sethu-madhav/system-design/pull/1, merge 3caa50f	merged on GitHub
+2026-11-02T04:42:54Z	step-2	user approved the step 2 spec; DeepSeek codes it in a new worktree thread	same flow as step 1	docs/steps/02-router-and-shell.md	open
