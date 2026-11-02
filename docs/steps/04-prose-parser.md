@@ -70,7 +70,7 @@ Because `md`'s rest parameter is typed `CueToken[]`, `` md`${"plain"}` `` does n
 
 #### How `md` parses
 
-`md` uses the cooked strings, `strings[i]`, never `strings.raw`. So `` \` `` in the template gives a backtick.
+`md` reads `strings.raw`, not the cooked strings, so a backslash in a code sample such as `"a\nb"` or `/\d+/` stays a backslash. It then turns `` \` `` into a backtick, `\$` into `$` and `\\` into one backslash. Changed after review. The first version of this spec used the cooked strings, which turned `\n` in code into a newline.
 
 1. **Join.** If any string contains the character U+E000, throw. Join the strings with U+E000 in place of each interpolation. Each U+E000 is one cue. Cues are used up in order, so the first U+E000 is `cues[0]`.
 2. **Dedent.** Split the text on `\n`. Drop the blank lines at the start and the end. A blank line is empty or only whitespace. Find the smallest number of leading spaces over the non-blank lines. Remove that many characters from the start of each non-blank line. Every blank line becomes `""`.
@@ -98,6 +98,7 @@ Read left to right. Merge adjacent `text` nodes into one.
 - An opening `*` or `**` with no closing marker throws `prose: unclosed emphasis`. So a lone `*` in text throws. Write math such as `2 * 3` in a code span.
 - `[text](url)` gives `link`. Parse `text` as inlines. `url` must start with `https://` or `#/`, or the link throws `prose: link must start with https:// or #/`. A `[` that does not start a complete `[text](url)` throws `` prose: unsupported syntax "<line>" ``.
 - U+E000 gives `{ t: "cue", step, text }` from the next cue. The cue's text is never parsed.
+- Added after review. The search for a closing `**`, `*` or `]` skips over code spans. An em that would close on the first star of a `**` throws `prose: unclosed emphasis`. A URL that holds a cue throws `prose: cue inside link url`. A URL with whitespace or `(` throws `prose: link url has a space or parenthesis`, so percent-encode those. After parsing, every cue must have been placed, or `md` throws.
 - Everything else is text.
 
 #### What `md` returns
@@ -164,8 +165,8 @@ Vitest, node environment. Make one `cue` with `makeCue<string>()` at the top. Ch
 Run each one from the worktree root and paste its full output in your report:
 
 1. `pnpm install`
-2. `pnpm build`. Its Vitest run of `src/content` shows 2 files and 34 tests before the Vite build.
-3. `pnpm test`, which shows 4 files and 52 tests passing.
+2. `pnpm build`. Its Vitest run of `src/content` shows 2 files and 38 tests before the Vite build.
+3. `pnpm test`, which shows 4 files and 56 tests passing. Review added four tests: `code keeps backslashes`, `cue inside a link url throws`, `link url with a space or parenthesis throws` and `emphasis markers inside code spans do not close emphasis`.
 4. `pnpm e2e`, which shows 4 tests passing.
 
 ## Prove the type test works
