@@ -110,14 +110,24 @@ export function parseSourcesTable(markdown: string): ReadonlyMap<string, Rule> {
   if (headerIndex === -1) {
     throw new Error("Repo table not found")
   }
+  const separator = lines[headerIndex + 1] ?? ""
+  if (!/^\|[-:| ]+\|$/.test(separator.trim())) {
+    throw new Error(`Repo table has no separator row: ${separator}`)
+  }
 
   const rules = new Map<string, Rule>()
   for (const line of lines.slice(headerIndex + 2)) {
     if (!line.startsWith("|")) break
     const cells = line.split("|").slice(1, -1).map((cell) => cell.trim())
-    const link = cells[0]
-    const key = link.slice(link.indexOf("[") + 1, link.indexOf("]"))
-    rules.set(key, toRule(cells[3]))
+    const key = /^\[([^\]]+)\]\(/.exec(cells[0] ?? "")?.[1]
+    const rule = cells[3]
+    if (key === undefined || rule === undefined) {
+      throw new Error(`Malformed Repo row: ${line}`)
+    }
+    if (rules.has(key)) {
+      throw new Error(`Duplicate Repo row: ${key}`)
+    }
+    rules.set(key, toRule(rule))
   }
   return rules
 }

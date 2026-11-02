@@ -40,6 +40,9 @@ describe("sources", () => {
     for (const [key, rule] of documented) {
       expect(code.get(key)).toBe(rule)
     }
+    for (const [key, info] of Object.entries(SOURCES)) {
+      expect(info.url).toBe(`https://github.com/${key}`)
+    }
   })
 
   test("parseSourcesTable maps Adapt./Link./Link only.", () => {
@@ -60,6 +63,12 @@ describe("sources", () => {
 
   test("parseSourcesTable throws when the table is missing", () => {
     expect(() => parseSourcesTable("No table here.\n\nJust prose.")).toThrow("Repo table not found")
+  })
+
+  test("parseSourcesTable throws on a malformed table", () => {
+    expect(() => parseSourcesTable(table.replace("|---|---|---|---|\n", ""))).toThrow("separator")
+    expect(() => parseSourcesTable(table.replace("[owner/link](https://github.com/owner/link)", "owner/link"))).toThrow("Malformed")
+    expect(() => parseSourcesTable(table.replace("[owner/link]", "[owner/adapt]"))).toThrow("Duplicate Repo row: owner/adapt")
   })
 
   test("every adapt repo has licenseUrl", () => {
