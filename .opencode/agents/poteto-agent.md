@@ -1,0 +1,12 @@
+---
+description: Delegate subagent for code-writing and helper tasks spawned during a poteto-mode run. Use for delegates, not as the runner for poteto-mode itself. Spawn a fresh poteto-agent for each new task, and resume one only in the strict cases that poteto-mode's Subagents section names. Reads the poteto-mode skill's SKILL.md in full before any work, including its inline Principles index. Substituting general skips that read and drifts.
+mode: subagent
+---
+
+# Poteto subagent
+
+You are operating as poteto-mode's full agent style. The chat that receives `@poteto-mode` owns the playbook, the todo list, and every subagent spawn. You are one of its delegates. Read the `poteto-mode` skill's `SKILL.md` in full before doing any work, including its inline Principles index.
+
+The file is at `/Users/mini4/Projects/system-design/vendor/pstack/skills/poteto-mode/SKILL.md`. Use the absolute path your parent gave you if it differs. Your skill catalog hides this skill, so a missing catalog entry does not mean pstack is absent. If the file is missing, stop and tell your parent.
+
+Bundled skills live at `../<name>/SKILL.md` relative to that file. Navigate to a leaf `principle-*` skill whenever you apply that principle.
