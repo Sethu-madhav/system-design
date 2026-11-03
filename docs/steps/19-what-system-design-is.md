@@ -35,6 +35,7 @@ The patch in Appendix B has every test change.
 - `src/content/curriculum.test.ts`. The load balancer test now expects the tracks `["foundations", "edge"]`. A new test checks the new lesson's chapter, order, minutes, heading ids, step ids, quiz length and source URLs.
 - `e2e/helpers.ts`. A new `SYSTEM_DESIGN_CORRECT` list holds the right answers to the new quiz. `passQuiz` takes an optional answer list, which defaults to the load balancer's `CORRECT`.
 - `e2e/progress.spec.ts`. The Continue card test now walks both lessons in reading order. It starts at 0 of 2, points at the new lesson, and shows Continue after a visit. After the new quiz passes, the count is 1 of 2 and the card points at the load balancer. After that quiz passes, the count is 2 of 2. The reset test expects "0 of 2 lessons done".
+- `e2e/quiz.spec.ts`. A new test answers the new quiz with `SYSTEM_DESIGN_CORRECT` and expects a score of 8/8. The pass mark is 70%, so a passed quiz alone would not catch one wrong key.
 - `e2e/scene-static.spec.ts`. A new test opens the lesson and checks its first heading, 8 cues, 3 visible boxes and "Step 1 of 8". At `dies`, the database is down with the note "what if this dies?". At `bottleneck`, it is up with the note "runs out first".
 
 ## How to do it
@@ -52,13 +53,13 @@ Run each one 3 times.
 
 - `pnpm build`. The content step runs 70 tests.
 - `pnpm test`. 188 tests in 14 files.
-- `pnpm e2e`. 51 tests.
+- `pnpm e2e`. 52 tests.
 
 ## Checks Opus ran on the prototype
 
 - Removing `s.down("db")` fails the build with "up of db in step bottleneck".
 - Changing the `dies` note to another text fails the new scene-static test.
-- Passing the new quiz in `progress.spec.ts` uses `SYSTEM_DESIGN_CORRECT`, so a wrong answer key there fails that test.
+- Moving the correct answer of the database question to another option fails the new quiz.spec test. The progress test alone did not catch it, because 7 of 8 still passes.
 - At 390 px wide, the lesson page's `scrollWidth` is 390.
 
 ## Originality
@@ -481,6 +482,32 @@ index 946e121..a15e4e8 100644
    expect(await page.evaluate(() => localStorage.getItem("sd.progress"))).toBe(null)
    await gotoReady(page, "/#/")
    await expect(lessonMark(page)).toHaveAttribute("data-status", "new")
+diff --git a/e2e/quiz.spec.ts b/e2e/quiz.spec.ts
+index 5a79084..0370015 100644
+--- a/e2e/quiz.spec.ts
++++ b/e2e/quiz.spec.ts
+@@ -1,5 +1,5 @@
+ import { expect, gotoReady, test } from "./fixtures"
+-import { CORRECT, answerQuiz } from "./helpers"
++import { CORRECT, SYSTEM_DESIGN_CORRECT, answerQuiz } from "./helpers"
+ 
+ const path = "/#/learn/load-balancer"
+ 
+@@ -16,6 +16,14 @@ test("answering all correctly shows 8/8 and passed", async ({ page }) => {
+   )).toBe(true)
+ })
+ 
++test("the what-system-design-is answer key scores 8/8", async ({ page }) => {
++  await gotoReady(page, "/#/learn/what-system-design-is")
++  await answerQuiz(page, SYSTEM_DESIGN_CORRECT)
++
++  await expect(page.getByTestId("quiz-score")).toHaveText("8/8")
++  await expect(page.getByTestId("quiz-verdict")).toHaveAttribute("data-passed", "true")
++})
++
+ test("a wrong choice shows its why", async ({ page }) => {
+   await gotoReady(page, path)
+   await answerQuiz(page, [{ radio: "Restarts Server A" }, ...CORRECT.slice(1)])
 diff --git a/e2e/scene-static.spec.ts b/e2e/scene-static.spec.ts
 index b5318e8..0252194 100644
 --- a/e2e/scene-static.spec.ts
