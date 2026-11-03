@@ -19,7 +19,7 @@ Read this before the code. The prototype behind every number here ran on a throw
 - **The visible "Prev" label becomes "Previous".** axe flags `label-content-name-mismatch` (serious) on that button, because its accessible name "Previous step" does not contain its text "Prev". The other four buttons already pass. The aria-labels stay, because `e2e/quiz.spec.ts:48` looks up a page-level button named exactly `Next` and must not hit the player.
 - **Focus rings already exist.** Looseleaf buttons and the slider thumb draw an ink `<g data-layer="focus">` layer when focused from the keyboard. The prototype tabbed through all six player controls and each layer was visible. This step adds only the test.
 - **The caption is already `aria-live="polite"`.** Its wrapper has it (`src/scene/ScenePlayer.tsx`, the `aria-live` div). Leave it.
-- **Why `inline` does not fix the stray period.** Chrome lays out a `<button>` as an inline block even with `display: inline`. A line may break after an inline block, even before a period. The fix wraps the cue and the punctuation that follows it in a `whitespace-nowrap` span and sets `whitespace-normal` back on the button, so long cue text still wraps inside the button. The prototype checked all 6 cues in the lesson that are followed by punctuation, including the `stateless` cue inside a callout.
+- **Why the cue becomes a `span`.** Chrome lays out a `<button>` as an atomic inline box, even with `display: inline`. A line may break after that box, even before a period, and a cue that wraps to two lines fills the whole line width. An earlier draft of this spec wrapped the cue and its punctuation in a `whitespace-nowrap` span. The tests passed, but a phone screenshot showed the period stranded at the right edge after a two-line cue. A `span` with `role="button"` is a true inline. Its text wraps like the words around it, and no line breaks before a period that follows it. The prototype checked all 6 cues in the lesson that are followed by punctuation, including the `stateless` cue inside a callout, and all 45 e2e tests passed.
 
 ## Before you start
 
@@ -49,7 +49,7 @@ Change exactly these 8 files:
 | `package.json` | from the add command |
 | `pnpm-lock.yaml` | from the add command |
 | `src/content/index.ts` | export `blockText` |
-| `src/app/ProseView.tsx` | keep trailing punctuation with its cue |
+| `src/app/ProseView.tsx` | the cue becomes an inline `span` button |
 | `src/app/LessonPage.tsx` | breadcrumb, contents rail, grid |
 | `src/app/Shell.tsx` | menu button and sheet below 768 px |
 | `src/scene/ScenePlayer.tsx` | stage `role="img"`, focusable scroll box, "Previous" |
@@ -67,35 +67,25 @@ export { blockText } from "./prose"
 
 ### `src/app/ProseView.tsx`
 
-Add `whitespace-normal` to the `Cue` button's class list, so it reads `cursor-pointer whitespace-normal text-left [font:inherit]`.
-
-Add `renderInlines` and use it for every inline list in the file. That covers `strong`, `em` and `link` children, `h` blocks, `p` blocks, `callout` blocks and list items. After this change the file contains no `map(renderInline)`.
+Only `Cue` changes. `renderInline` and `renderBlock` stay as they are on `main`, with `map(renderInline)` everywhere. There is no `renderInlines` and no `whitespace-nowrap` wrapper.
 
 ```tsx
-const LEADING_PUNCT = /^[.,;:!?)]+/
-
-function renderInlines(nodes: readonly Inline[]): ReactNode[] {
-  const out: ReactNode[] = []
-  for (let i = 0; i < nodes.length; i++) {
-    const node = nodes[i]
-    if (node === undefined) continue
-    const next = nodes[i + 1]
-    if (node.t === "cue" && next !== undefined && next.t === "text") {
-      const punct = LEADING_PUNCT.exec(next.v)?.[0]
-      if (punct !== undefined) {
-        out.push(<span key={i} className="whitespace-nowrap"><Cue step={node.step} text={node.text} />{punct}</span>)
-        out.push(next.v.slice(punct.length))
-        i++
-        continue
-      }
-    }
-    out.push(renderInline(node, i))
+function Cue({ step, text }: { step: string; text: string }) {
+  const { active, play } = useSceneCue(step)
+  const onKeyDown = (event: KeyboardEvent<HTMLSpanElement>) => {
+    if (event.key !== "Enter" && event.key !== " ") return
+    event.preventDefault()
+    play()
   }
-  return out
+  return (
+    <span role="button" tabIndex={0} data-cue={step} data-active={active ? "" : undefined} onClick={play} onKeyDown={onKeyDown} className="cursor-pointer rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ink">
+      <Highlight seed={step}>{text}</Highlight>
+    </span>
+  )
 }
 ```
 
-Import `type ReactNode` from `react`. `renderInline` keeps its `switch`. Only its `strong`, `em` and `link` cases change, to `renderInlines(node.c)`.
+Import `type KeyboardEvent` from `react`. `preventDefault` stops Space from scrolling the page.
 
 ### `src/app/LessonPage.tsx`
 
@@ -188,7 +178,7 @@ Use `test`, `expect` and `gotoReady` from `./fixtures`. Import `AxeBuilder` from
    - `document.documentElement.scrollWidth` is at most `clientWidth`.
    - The `scene` box has `x >= 0` and `x + width <= 390`.
    - `page.getByRole("region", { name: "Diagram, scrolls sideways" })` is visible.
-   - Run this check in `page.evaluate`. For every `[data-cue]` element whose `nextSibling` is a text node starting with one of `.,;:!?)`, make a `Range` over that first character. Its `getBoundingClientRect()` must have `top >= last.top - 1` and `bottom <= last.bottom + 1`, where `last` is the cue's last `getClientRects()` entry. Return the steps that fail and the number checked. Expect no failures and at least 6 checked.
+   - Run this check in `page.evaluate`. For every `[data-cue]` element whose `nextSibling` is a text node starting with one of `.,;:!?)`, make a `Range` over that first character. Its `getBoundingClientRect()` must have `top >= last.top - 1`, `bottom <= last.bottom + 1` and `Math.abs(rect.left - last.right) <= 2`, where `last` is the cue's last `getClientRects()` entry. The last condition means the period sits right after the cue's last word, not at the far end of the line. Return the steps that fail and the number checked. Expect no failures and at least 6 checked.
    - Click `menu-open`. `sidebar-sheet` is visible. Click `page.getByTestId("sidebar-sheet").getByRole("link", { name: "Load balancer" })`, scoped to the sheet. `sidebar-sheet` is hidden and the URL ends with `#/learn/load-balancer`.
 3. `TOC link scrolls to the section`. Open the lesson at the default size.
    - `menu-open` is hidden, because the sheet is for narrow screens only.
@@ -200,6 +190,7 @@ Use `test`, `expect` and `gotoReady` from `./fixtures`. Import `AxeBuilder` from
    - Before any Tab, the `First step` button's `[data-layer="focus"]` is not visible. It either has count 0 or its computed `visibility` is not `visible`.
    - Focus `scene` with `locator.focus()`. Then press `Tab` once for each control, in this order: button `First step`, button `Previous step`, button `Play`, button `Next step`, button `Last step`, slider `Scrub through the diagram`. After each press that control is focused, `el.matches(":focus-visible")` is true, and its `[data-layer="focus"]` has computed `visibility` `visible` and `opacity` `1`.
    - Read the text of `caption`. `page.getByRole("img", { name: <that text>, exact: true })` is visible. Click `Next step`. `caption` now has different text, and the img with the new text as its name is visible.
+   - Focus `[data-cue="fail"]` and press `Enter`. `scene` has `data-step-id="fail"`. Focus `[data-cue="arrive"]` and press `Space`. `scene` has `data-step-id="arrive"`. Pick `arrive` second because it comes before `fail`, so the scene cannot reach it by playing on.
 
 ## Commands that must pass
 
@@ -221,8 +212,8 @@ Use `test`, `expect` and `gotoReady` from `./fixtures`. Import `AxeBuilder` from
   - adding `tabIndex={-1}` to the Previous button fails e2e test 4;
   - changing the sidebar `aside` class from `hidden md:block` to `block` fails e2e test 2;
   - dropping `onNavigate` from the sheet's `LessonNav` fails e2e test 2;
-  - rendering `callout` blocks with `block.c.map(renderInline)` fails e2e test 2;
-  - removing `whitespace-normal` from the `Cue` button fails e2e test 2;
+  - rendering `Cue` as `<button type="button">` with the same props and children fails e2e test 2;
+  - dropping the `" "` case from the cue's `onKeyDown` fails e2e test 4;
   - building the contents link with `href({ name: "lesson", slug: lesson.slug })` fails e2e test 3;
   - removing `lg:sticky` from `toc` fails e2e test 3;
   - replacing `<BreadcrumbPage>` with plain text fails e2e test 3;
