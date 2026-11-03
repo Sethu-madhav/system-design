@@ -67,3 +67,5 @@ ts	phase	decision	why	evidence	result
 2026-11-03T06:40:17Z	step-13	sent 4 review findings to Codex	snippet overflowed the dialog, Cmd-K left a stale query, copied content types, search looped over every doc and key	commit 2b68e73, /tmp/r13-health.png	fixed and re-verified
 2026-11-03T06:40:17Z	step-13	added tag weight and tie order unit tests	two of my planted bugs passed every test	commit b9f0c65	both now fail a named test
 2026-11-03T06:40:17Z	step-13	merged step 13	build 68, unit 186 in 14 files, e2e 41 in 3 runs, 16 planted bugs caught, 0 console errors	PR #13, /tmp/r13-desk-health.png	merged
+2026-11-03T16:40:16Z	step-14	sent the cue line-break bug back to Codex as round 3, with a span role=button cue	my 390 px screenshot showed periods stranded at the line edge after a wrapping button cue	commit 7d31fa7, /tmp/r14-phone-cue.png	fixed, /tmp/r14c-servers.png
+2026-11-03T16:40:16Z	step-14	verified and merged navigation and accessibility	build 68, unit 186, e2e 45 three times, 14 spec bugs plus 2 of mine caught	PR #14, commit 46acade	merged
