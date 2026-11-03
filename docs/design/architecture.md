@@ -9,7 +9,7 @@ src/
     lesson.ts        LessonInput, LessonDraft, Lesson; defineLesson (validates + compiles at load), finishLesson
     prose.ts         `md` tagged template -> Prose AST (markdown subset + typed cues); blockText, slugify
     quiz.ts          Question/Quiz types, grade, shuffledOrder, checkQuiz
-    sources.ts       SOURCES registry, AdaptableRepo type, SourceRef, attribution(), parseSourcesTable
+    sources.ts       SOURCES registry, SourceRef, Sources, parseSourcesTable
     curriculum.ts    TRACKS, import.meta.glob of lessons/*/lesson.ts, buildCurriculum, neighbors
     index.ts         app-facing surface (curriculum, types, grade)
     content.test.ts  per-lesson invariants + sources.md sync; runs inside `pnpm build`
@@ -39,7 +39,7 @@ Sketch files are under `docs/design/sketch/` with the same relative paths (`sket
 
 ## Problem
 
-A static, backend-free SPA that teaches system design through lesson text, a step-by-step animated ink diagram, and a quiz, with progress kept in localStorage. Constraints that shape it: the ink engine is a cached recipe-to-SVG-string pipeline, so anything that changes per frame must stay out of recipe params, and `defineRecipe` must be called at module scope. Reduced motion already zeroes `--ll-motion` and all CSS animation, and the player has to agree with it. `docs/sources.md` requires that the build fail when a lesson adapts a "Link only" repo, and that adapted lessons carry author, license link and a change notice. The code is written one spec at a time by a mid-tier model with no memory, which copies the nearest example and takes the shortest path that compiles. So the safest rules are the ones `tsc` enforces, and the next safest are the ones the build's own test step enforces. Deploy is GitHub Pages: static files, with an unknown base path.
+A static, backend-free SPA that teaches system design through lesson text, a step-by-step animated ink diagram, and a quiz, with progress kept in localStorage. Constraints that shape it: the ink engine is a cached recipe-to-SVG-string pipeline, so anything that changes per frame must stay out of recipe params, and `defineRecipe` must be called at module scope. Reduced motion already zeroes `--ll-motion` and all CSS animation, and the player has to agree with it. `docs/sources.md` says every lesson is our own writing and every source is a further-reading link, and the build fails when a lesson marks a source as adapted. The code is written one spec at a time by a mid-tier model with no memory, which copies the nearest example and takes the shortest path that compiles. So the safest rules are the ones `tsc` enforces, and the next safest are the ones the build's own test step enforces. Deploy is GitHub Pages: static files, with an unknown base path.
 
 ## Usage (caller's view)
 
@@ -59,7 +59,7 @@ const scene = defineScene({
 
 export default defineLesson({
   title: "Load balancer", summary: "...", track: "edge", order: 3,
-  sources: [{ use: "adapted", repo: "donnemartin/system-design-primer", section: "Load balancer", anchor: "load-balancer" }],
+  sources: [{ use: "link", repo: "donnemartin/system-design-primer", title: "The System Design Primer: load balancer", url: "https://github.com/donnemartin/system-design-primer#load-balancer" }],
   scene,
   body: ({ cue }) => md`
     ## What it does
@@ -69,7 +69,7 @@ export default defineLesson({
 })
 ```
 
-These are `tsc` errors: `s.send("you", "lbb")`, `cue("pik", ...)`, `replay: "pik"`, `track: "edges"`, `${someString}` inside `md`, and `use: "adapted"` with any repo except the primer. The build's content test catches the rest: unsupported markdown such as images, a quiz `choice` with two correct options, a step that the text never cues, an edge drawn through a node, and a duplicate order.
+These are `tsc` errors: `s.send("you", "lbb")`, `cue("pik", ...)`, `replay: "pik"`, `track: "edges"`, `${someString}` inside `md`, and `use: "adapted"` with any repo. The build's content test catches the rest: unsupported markdown such as images, a quiz `choice` with two correct options, a step that the text never cues, an edge drawn through a node, and a duplicate order.
 
 **Lesson page (app code):**
 
@@ -104,7 +104,7 @@ expect(reducePlayer(tl, { mode: "paused", t: 0 }, { type: "next" })).toEqual({ m
 
 **Prose is a markdown subset parsed once, at module load, into an AST.** `md` accepts only `CueToken` interpolations. The parser rejects image syntax, HTML and tables. A lesson therefore cannot embed a copied source image, which `docs/sources.md` forbids, and this holds by construction. Rendering and search both read the same AST (single source of truth). Reading time, headings and the cue list are derived during the parse.
 
-**The license rule lives in the type of `SourceRef`.** `AdaptableRepo` is computed from `SOURCES[k].rule`, so `{ use: "adapted", repo: "ByteByteGoHq/system-design-101" }` does not compile, and `pnpm build` starts with `tsc -b`. Attribution text is derived from the registry (`attribution(ref)`), so an author cannot leave out the license link or the change notice: there is no field to forget. `docs/sources.md` stays the human source. `content.test.ts` parses its table and fails the build if the registry differs, which makes the two lists fail loudly when they diverge (hand-synced list rule). `license.typetest.ts` holds `@ts-expect-error` cases, so a loosened type also breaks `tsc`. Build: `tsc -b && vitest run src/content && vite build`.
+**The license rule lives in the type of `SourceRef`.** `SourceRef` allows only `use: "link"`, so `{ use: "adapted", ... }` does not compile for any repo, the primer included, and `pnpm build` starts with `tsc -b`. Lesson pages have no credit section, because no lesson adapts text. `docs/sources.md` stays the human source. `content.test.ts` parses its table and fails the build if the registry differs, which makes the two lists fail loudly when they diverge (hand-synced list rule). `license.typetest.ts` holds `@ts-expect-error` cases, so a loosened type also breaks `tsc`. Build: `tsc -b && vitest run src/content && vite build`.
 
 **A scene is data; time is a pure function.** `defineScene(nodes).steps(fn)` fixes node ids, then step ids. Steps are an object, so key order is play order and a duplicate id is a TS error. Edges are not authored. `compile` derives one edge per unordered node pair from the sends, with arrowheads taken from the directions used. `compile` also validates the scene and times it. Durations are derived from the number of sends and the caption's reading time; there is no timing knob. Each `TimedStep` precomputes its `world` (visibility and up/down status after persistent actions), so `frameAt(tl, t, motion)` is O(nodes). It never replays events. Play, pause, step, scrub, deep link to a step and "show me" are all "set t". The player reducer holds only `{mode, t, stopAt?}`, which cannot disagree with the timeline. Reduced motion is owned by exactly one function: `frameAt(..., "reduced")` returns no packets and a still frame for the whole step, with the step's edges marked active. The reducer and the view do not branch on motion.
 

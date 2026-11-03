@@ -2,14 +2,16 @@ import { finishLesson, type Lesson, type LessonDraft } from "./lesson"
 
 export const TRACKS = [
   { id: "foundations", title: "Foundations" },
+  { id: "estimation", title: "Back of the envelope" },
+  { id: "network", title: "The path of a request" },
   { id: "edge", title: "Edge and traffic" },
-  { id: "application", title: "Application layer" },
+  { id: "application", title: "Application services" },
   { id: "data", title: "Databases" },
   { id: "cache", title: "Caching" },
-  { id: "async", title: "Asynchronism" },
-  { id: "communication", title: "Communication" },
+  { id: "async", title: "Asynchronous work" },
+  { id: "distributed", title: "Distributed systems" },
+  { id: "operations", title: "Running in production" },
   { id: "security", title: "Security" },
-  { id: "estimation", title: "Back of the envelope" },
   { id: "case-studies", title: "Case studies" },
 ] as const
 

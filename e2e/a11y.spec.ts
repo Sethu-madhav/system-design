@@ -76,10 +76,20 @@ test("TOC link scrolls to the section", async ({ page }) => {
   await expect(breadcrumb.locator('[aria-current="page"]')).toHaveText("Load balancer")
   const toc = page.getByTestId("toc")
   await expect(toc).toBeVisible()
-  await expect(toc.locator("a").allTextContents()).resolves.toEqual(["What it does", "How it picks a server", "Horizontal scaling"])
-  await toc.getByRole("link", { name: "How it picks a server" }).click()
-  await expect(page).toHaveURL(/#\/learn\/load-balancer\/how-it-picks-a-server$/)
-  await expect(page.locator("#how-it-picks-a-server")).toBeInViewport()
+  await expect(toc.locator("a").allTextContents()).resolves.toEqual([
+    "One server is not enough",
+    "What happens to one request",
+    "Health checks",
+    "Choosing a server",
+    "Layer 4 and layer 7",
+    "Adding and removing servers",
+    "Sessions and sticky routing",
+    "When the balancer fails",
+    "In a design review",
+  ])
+  await toc.getByRole("link", { name: "Choosing a server" }).click()
+  await expect(page).toHaveURL(/#\/learn\/load-balancer\/choosing-a-server$/)
+  await expect(page.locator("#choosing-a-server")).toBeInViewport()
   expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
   const tocRect = await toc.boundingBox()
   expect(tocRect?.y).toBeGreaterThanOrEqual(0)

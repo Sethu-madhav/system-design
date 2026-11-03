@@ -24,10 +24,19 @@ export function LessonPage({ route }: { route: LessonRoute }) {
   }, [record, slug])
 
   useEffect(() => {
-    if (route.section) {
-      document.getElementById(route.section)?.scrollIntoView()
-    } else {
+    const section = route.section
+    if (!section) {
       window.scrollTo(0, 0)
+      return
+    }
+    const scroll = () => document.getElementById(section)?.scrollIntoView()
+    scroll()
+    let current = true
+    void document.fonts.ready.then(() => {
+      if (current) scroll()
+    })
+    return () => {
+      current = false
     }
   }, [route.section, lesson])
 
@@ -68,19 +77,10 @@ export function LessonPage({ route }: { route: LessonRoute }) {
         <div className="min-w-0 space-y-8 lg:col-start-1 lg:row-start-3">
           <ProseView prose={lesson.body} />
           <QuizView slug={lesson.slug} quiz={lesson.quiz} />
-          <section data-testid="attribution" className="space-y-2">
-            <H2>Attribution</H2>
-            {lesson.attributions.map((item) => (
-              <p key={item.sourceUrl} className="font-hand text-base">
-                <a href={item.sourceUrl} className={LINK_CLASS}>{item.text}</a>{" "}
-                Licensed under <a href={item.licenseUrl} className={LINK_CLASS}>{item.license}</a>. {item.changed}
-              </p>
-            ))}
-          </section>
           <section data-testid="further-reading" className="space-y-2">
             <H2>Further reading</H2>
             <ul className="list-disc space-y-1 ps-6">
-              {lesson.furtherReading.map((item) => <li key={item.url}><a href={item.url} className={LINK_CLASS}>{item.title}</a></li>)}
+              {lesson.sources.map((item) => <li key={item.url}><a href={item.url} className={LINK_CLASS}>{item.title}</a></li>)}
             </ul>
           </section>
           <nav data-testid="lesson-nav" aria-label="Lesson navigation" className="flex justify-between gap-4 font-hand text-lg">

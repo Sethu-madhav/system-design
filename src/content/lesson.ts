@@ -1,7 +1,7 @@
 import { compile, type Scene, type Timeline } from "@/scene"
 import { makeCue, type Block, type CueFn, type Prose } from "./prose"
 import { checkQuiz, type Quiz } from "./quiz"
-import { attribution, type Attribution, type SourceRef, type Sources } from "./sources"
+import type { Sources } from "./sources"
 import type { TrackId } from "./curriculum"
 
 export interface LessonInput<N extends string, S extends string> {
@@ -31,8 +31,6 @@ export interface LessonDraft {
 export interface Lesson extends LessonDraft {
   readonly slug: string
   readonly minutes: number
-  readonly attributions: readonly Attribution[]
-  readonly furtherReading: readonly Extract<SourceRef, { use: "link" }>[]
   readonly headings: readonly Extract<Block, { t: "h" }>[]
 }
 
@@ -59,12 +57,6 @@ export function finishLesson(slug: string, draft: LessonDraft): Lesson {
     ...draft,
     slug,
     minutes: Math.max(1, Math.ceil(draft.body.words / 200 + draft.timeline.duration / 60000)),
-    attributions: draft.sources
-      .filter((source): source is Extract<SourceRef, { use: "adapted" }> => source.use === "adapted")
-      .map((source) => attribution(source)),
-    furtherReading: draft.sources.filter(
-      (source): source is Extract<SourceRef, { use: "link" }> => source.use === "link",
-    ),
     headings: draft.body.blocks.filter((block): block is Extract<Block, { t: "h" }> => block.t === "h"),
   }
 }

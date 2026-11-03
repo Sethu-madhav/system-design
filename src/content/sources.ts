@@ -1,24 +1,20 @@
-export type Rule = "adapt" | "link" | "link-only"
+export type Rule = "link" | "link-only"
 
-interface SourceBase {
+export interface SourceInfo {
+  readonly rule: Rule
   readonly title: string
   readonly author: string
   readonly url: string
   readonly license: string
 }
 
-export type SourceInfo =
-  | (SourceBase & { readonly rule: "adapt"; readonly licenseUrl: string })
-  | (SourceBase & { readonly rule: "link" | "link-only" })
-
 export const SOURCES = {
   "donnemartin/system-design-primer": {
-    rule: "adapt",
+    rule: "link",
     title: "The System Design Primer",
     author: "Donne Martin",
     url: "https://github.com/donnemartin/system-design-primer",
     license: "CC BY 4.0",
-    licenseUrl: "https://creativecommons.org/licenses/by/4.0/",
   },
   "binhnguyennus/awesome-scalability": {
     rule: "link",
@@ -66,39 +62,16 @@ export const SOURCES = {
 
 export type RepoId = keyof typeof SOURCES
 
-export type AdaptableRepo = {
-  [K in RepoId]: (typeof SOURCES)[K]["rule"] extends "adapt" ? K : never
-}[RepoId]
-
-export type SourceRef =
-  | { readonly use: "adapted"; readonly repo: AdaptableRepo; readonly section: string; readonly anchor: string }
-  | { readonly use: "link"; readonly title: string; readonly url: string; readonly repo?: RepoId }
+export interface SourceRef {
+  readonly use: "link"
+  readonly title: string
+  readonly url: string
+  readonly repo?: RepoId
+}
 
 export type Sources = readonly [SourceRef, ...SourceRef[]]
 
-export const CHANGE_NOTICE = "Text paraphrased and shortened. Diagrams are original."
-
-export interface Attribution {
-  readonly text: string
-  readonly sourceUrl: string
-  readonly license: string
-  readonly licenseUrl: string
-  readonly changed: typeof CHANGE_NOTICE
-}
-
-export function attribution(ref: Extract<SourceRef, { use: "adapted" }>): Attribution {
-  const source = SOURCES[ref.repo]
-  return {
-    text: `Adapted from "${ref.section}" in ${source.title} by ${source.author}.`,
-    sourceUrl: `${source.url}#${ref.anchor}`,
-    license: source.license,
-    licenseUrl: source.licenseUrl,
-    changed: CHANGE_NOTICE,
-  }
-}
-
 function toRule(text: string): Rule {
-  if (text === "Adapt.") return "adapt"
   if (text === "Link.") return "link"
   if (text === "Link only.") return "link-only"
   throw new Error(`Unknown rule: ${text}`)
