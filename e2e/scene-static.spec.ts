@@ -69,3 +69,20 @@ test("deep link to 'drain' keeps server B with a draining note and 'stateless' h
   await expect(scene.locator('[data-scene-node="sessions"]')).toHaveAttribute("data-visible", "true")
   await expect(scene.locator('[data-scene-node="a"]')).toHaveAttribute("data-down", "")
 })
+
+test("what-system-design-is shows 8 cues, 'dies' crosses out the database and 'bottleneck' brings it back", async ({ page }) => {
+  const lesson = "/#/learn/what-system-design-is"
+  await gotoReady(page, lesson)
+  await expect(page.getByRole("heading", { level: 2, name: "A one-line idea is not a design" })).toBeVisible()
+  await expect(page.locator('[data-testid="prose"] [data-cue]')).toHaveCount(8)
+  const scene = page.getByTestId("scene")
+  const db = scene.locator('[data-scene-node="db"]')
+  await expect(scene.locator('[data-scene-node][data-visible="true"]')).toHaveCount(3)
+  await expect(page.getByText("Step 1 of 8")).toBeVisible()
+  await gotoReady(page, `${lesson}/step/dies`)
+  await expect(db).toHaveAttribute("data-down", "")
+  await expect(db.getByTestId("scene-note")).toHaveText("what if this dies?")
+  await gotoReady(page, `${lesson}/step/bottleneck`)
+  await expect(db).not.toHaveAttribute("data-down", "")
+  await expect(db.getByTestId("scene-note")).toHaveText("runs out first")
+})

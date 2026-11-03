@@ -16,6 +16,17 @@ export const CORRECT: readonly QuizAnswer[] = [
   { order: "solved" },
 ]
 
+export const SYSTEM_DESIGN_CORRECT: readonly QuizAnswer[] = [
+  { checks: ["Users can post a photo", "Users can follow other users"] },
+  { radio: "Non-functional" },
+  { radio: "Who uses it, and which actions must work, such as one-to-one or group chat?" },
+  { radio: "About 2,300" },
+  { radio: "Add a second copy of the database that can take over" },
+  { radio: "Both can be good designs, because their requirements differ" },
+  { radio: "A bank account balance" },
+  { order: "solved" },
+]
+
 export async function solveOrder(page: Page) {
   const read = () => page.locator('[data-testid="quiz-order"] li').evaluateAll((rows) =>
     rows.map((row) => Number(row.getAttribute("data-item"))),
@@ -45,7 +56,7 @@ export async function answerQuiz(page: Page, answers: readonly QuizAnswer[] = CO
   }
 }
 
-export async function passQuiz(page: Page) {
-  await answerQuiz(page)
+export async function passQuiz(page: Page, answers: readonly QuizAnswer[] = CORRECT) {
+  await answerQuiz(page, answers)
   await expect(page.getByTestId("quiz-verdict")).toHaveAttribute("data-passed", "true")
 }
