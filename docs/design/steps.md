@@ -181,6 +181,8 @@ Conventions every spec repeats:
 
 **User sees.** A lesson that works on a phone, with breadcrumbs and a contents list on desktop.
 
+**Carried over from step 11.** At 390 px wide, a period right after a cue highlight wraps onto its own line (`src/app/ProseView.tsx`, the cue button). Step 14 fixes it and its phone test checks it.
+
 ## Step 15: Deploy
 
 **Goal.** The app is public on GitHub Pages, built and checked in CI.
