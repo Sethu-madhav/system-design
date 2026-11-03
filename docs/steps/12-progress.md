@@ -155,7 +155,7 @@ Compare ratios without division: `x` beats `y` when `x.correct * y.total > y.cor
 
 **`sameDoc(a, b)`** is true when both documents have the same slugs and every field is equal. Key order does not matter.
 
-**`statusOf(doc, slug)`.** `done` when the slug has a `bestQuiz` with `bestQuiz.correct / bestQuiz.total >= PASS_RATIO`. Import `PASS_RATIO` from `@/content`. `started` when the slug has any field. `new` otherwise, including when the slug is not in the document.
+**`statusOf(doc, slug)`.** Look the slug up only if `Object.hasOwn(doc.lessons, slug)`, so a slug such as `toString` never reads `Object.prototype`. `done` when the slug has a `bestQuiz` with `bestQuiz.correct / bestQuiz.total >= PASS_RATIO`. Import `PASS_RATIO` from `@/content`. `started` when the slug has any field. `new` otherwise, including when the slug is not in the document.
 
 **`summarize(doc, orderedSlugs)`.** `total` is `orderedSlugs.length`. `done` counts the slugs in `orderedSlugs` whose status is `done`. Slugs in the document but not in `orderedSlugs` count for nothing. `nextSlug` is the first slug in `orderedSlugs` that is not done. When every slug is done, leave `nextSlug` out.
 
@@ -186,7 +186,7 @@ The random document generator picks slugs from `["a", "b", "c"]`. Each field is 
 8. `join is commutative`. For 200 random pairs, `join(x, y)` is `sameDoc` with `join(y, x)`.
 9. `join is associative`. For 200 random triples, `join(join(x, y), z)` is `sameDoc` with `join(x, join(y, z))`.
 10. `join is idempotent`. For 200 random pairs, `join(x, x)` is `sameDoc` with `x`, and `join(x, join(x, y))` is `sameDoc` with `join(x, y)`.
-11. `statusOf new/started/done`. On `EMPTY`, slug `a` is `new`. After `opened`, it is `started`. After quiz 2/4 it is still `started`. After quiz 7/10 it is `done`, because 7/10 is exactly `PASS_RATIO`. A slug never recorded is `new`.
+11. `statusOf new/started/done`. On `EMPTY`, slug `a` is `new`. After `opened`, it is `started`. After quiz 2/4 it is still `started`. After quiz 7/10 it is `done`, because 7/10 is exactly `PASS_RATIO`. A slug never recorded is `new`, and so is `toString` on `EMPTY`.
 12. `summarize nextSlug skips done lessons`. With slugs `["a", "b", "c"]`, `a` done, `b` started and `c` new, the summary is `{ done: 1, total: 3, nextSlug: "b" }`. A done slug `z` that is not in the list changes nothing. With all three done, `done` is 3 and `nextSlug` is `undefined`.
 13. `store.record writes join of memory and storage`. Put a document with `a.openedAt` 5 in the KV and create a store. Then write a document with `b.openedAt` 6 straight into the KV, as another tab would. Record `opened` for `c` at 7. The stored JSON parses to a document with `a`, `b` and `c`, and `read()` is `sameDoc` with it.
 14. `two stores on one fake KV keep both facts after interleaved records`. Create stores A and B on one empty KV. A records `opened a`, B records quiz 3/4 for `b`, then A records `scene-done a`. The stored document has `a.openedAt`, `a.sceneDoneAt` and `b.bestQuiz`.
@@ -244,7 +244,7 @@ Call `useProgress()`. In the Submit click handler, after working out `result = g
 
 ### `src/app/Shell.tsx`
 
-Call `useProgress()`. In each sidebar lesson link, after the title, add the mark:
+Call `useProgress()`. Work out each lesson's status once, and pick the icon and label from one `Record<LessonStatus, { icon: string; label: string }>` table at module scope built from the table below. No nested ternaries. In each sidebar lesson link, after the title, add the mark:
 
 ```tsx
 <span data-testid="lesson-status" data-slug={lesson.slug} data-status={status(lesson.slug)} className="ms-auto">
@@ -266,7 +266,7 @@ Call `useProgress()`. Between the header and the first track, add a `section` wi
 
 - `<p data-testid="progress-count">{done} of {total} lessons done</p>`;
 - a Looseleaf `Progress` with `value={done}`, `max={total}` and `aria-label="Lessons done"`;
-- when `summary.nextSlug` is set, a link `<a data-testid="next-lesson" data-slug={nextSlug} data-status={status(nextSlug)} href={href({ name: "lesson", slug: nextSlug })}>`. It wraps a Looseleaf `Card` whose first line reads "Start here" when the status is `new`, or "Continue" when it is `started`, and whose second line is the lesson title from `curriculum.bySlug`;
+- when `summary.nextSlug` is set, a link `<a data-testid="next-lesson" data-slug={nextSlug} data-status={status(nextSlug)} href={href({ name: "lesson", slug: nextSlug })}>`. It wraps a Looseleaf `Card` whose first line is a small label in `font-hand text-sm text-pencil-text` reading "Start here" when the status is `new`, or "Continue" when it is `started`. The second line is the lesson title from `curriculum.bySlug`, in `font-script text-2xl font-bold`, so the title reads as the heading and the label as a note above it;
 - when `nextSlug` is not set, `<p data-testid="all-done">You finished every lesson.</p>`;
 - the reset dialog. A Looseleaf `AlertDialog` whose `AlertDialogTrigger asChild` wraps a Looseleaf `Button` with `variant="outline"` reading "Reset progress". The content has `AlertDialogTitle` "Reset progress?", `AlertDialogDescription` "This clears every mark and quiz score saved in this browser.", `AlertDialogCancel` "Cancel", and `AlertDialogAction` "Reset" with `onClick={clear}`.
 
