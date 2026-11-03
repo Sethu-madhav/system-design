@@ -53,7 +53,7 @@ Steps 3 to 7 change nothing in the browser. You check them by reading the test n
 
 Each lesson is one spec and one file, `src/content/lessons/<slug>/lesson.ts`, in the same shape as the load-balancer lesson. Opus writes the lesson text, scene and quiz in the spec. The coder adds the file and one Playwright line. Opus then checks that the text does not follow any source in `docs/sources.md`.
 
-Lessons follow `docs/curriculum.md`, which lists our own 12 chapters and 69 lessons in reading order. A lesson has exactly one diagram. A case study that needs several diagrams becomes several lessons, such as Pastebin write path and Pastebin read path.
+Lessons follow `docs/curriculum.md`, which lists our own 12 chapters and 69 lessons in reading order. A lesson has exactly one diagram. A case study that needs several diagrams becomes several lessons, such as making a short link and following one in the URL shortener.
 
 ## Verification rules
 
