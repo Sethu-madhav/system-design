@@ -1,5 +1,5 @@
 import { H1, H2 } from "@/components/ui/typography"
-import { IndexCard, IndexCardContent, IndexCardFooter, IndexCardTitle } from "@/components/ui/index-card"
+import { IndexCard, IndexCardContent, IndexCardFooter, IndexCardHeader, IndexCardTitle } from "@/components/ui/index-card"
 import { curriculum } from "@/content"
 import { href } from "@/app/routes"
 import { useProgress } from "@/progress"
@@ -68,7 +68,9 @@ export function HomePage() {
             {track.lessons.map((lesson) => (
               <a key={lesson.slug} href={href({ name: "lesson", slug: lesson.slug })} data-testid="lesson-card" data-slug={lesson.slug} className="block w-full max-w-md focus-visible:outline-2 focus-visible:outline-offset-4">
                 <IndexCard>
-                  <IndexCardTitle>{lesson.title}</IndexCardTitle>
+                  <IndexCardHeader>
+                    <IndexCardTitle>{lesson.title}</IndexCardTitle>
+                  </IndexCardHeader>
                   <IndexCardContent>{lesson.summary}</IndexCardContent>
                   <IndexCardFooter>{lesson.minutes} min</IndexCardFooter>
                 </IndexCard>
