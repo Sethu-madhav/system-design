@@ -62,3 +62,8 @@ ts	phase	decision	why	evidence	result
 2026-11-03T03:19:29Z	step11	left the stray period after prose highlights on phone for a later step	it is in ProseView, which step 11 did not touch	/tmp/r11-phone.png, commit 45c4302	open
 2026-11-03T03:43:37Z	step12	sent three review findings back to Codex and fixed the spec to match	statusOf read Object.prototype for slugs like toString, the sidebar called status four times in nested ternaries, and the next-lesson card had no heading	commit 460ea89	fixed by Codex, re-verified
 2026-11-03T03:43:37Z	step12	merged progress across reloads	verification passed after the fix round	PR #12, /tmp/r12-*.png	build 68, unit 173 in 13 files, e2e 37 in 3 runs, 12 of 12 planted bugs caught
+2026-11-03T06:40:17Z	step-13	wrote the step 13 search spec	Codex needs an exact contract for scoring, snippets and tests	commit 13e8f07	spec pushed
+2026-11-03T06:40:17Z	step-13	expected the lesson before the fail step for health check	the lesson tags contain health check, so the lesson scores 12 and the step 6	docs/steps/13-search.md	e2e test 2 checks that order
+2026-11-03T06:40:17Z	step-13	sent 4 review findings to Codex	snippet overflowed the dialog, Cmd-K left a stale query, copied content types, search looped over every doc and key	commit 2b68e73, /tmp/r13-health.png	fixed and re-verified
+2026-11-03T06:40:17Z	step-13	added tag weight and tie order unit tests	two of my planted bugs passed every test	commit b9f0c65	both now fail a named test
+2026-11-03T06:40:17Z	step-13	merged step 13	build 68, unit 186 in 14 files, e2e 41 in 3 runs, 16 planted bugs caught, 0 console errors	PR #13, /tmp/r13-desk-health.png	merged
