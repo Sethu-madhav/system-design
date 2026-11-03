@@ -9,13 +9,13 @@ const scene = defineScene({
   sessions: { kind: "cache", label: "Session store", at: [6, 1], hidden: true },
 }).steps((s) => ({
   arrive: s.step(
-    "Your request goes to the load balancer, not to a server.",
-    s.send("you", "lb", "GET /"),
+    "Your request goes to the load balancer. You never see the servers behind it.",
+    s.send("you", "lb", "GET /feed"),
   ),
   pick: s.step(
-    "The balancer picks a healthy server, here by round robin, and forwards the request.",
+    "The balancer picks Server A by round robin and forwards the request.",
     s.focus("lb"),
-    s.send("lb", "a", "GET /"),
+    s.send("lb", "a", "GET /feed"),
   ),
   reply: s.step(
     "Server A answers. The balancer passes the response back to you.",
@@ -23,112 +23,275 @@ const scene = defineScene({
     s.send("lb", "you", "200", "response"),
   ),
   next: s.step(
-    "The next request goes to the next server in turn.",
-    s.send("you", "lb", "GET /"),
-    s.send("lb", "b", "GET /"),
+    "The next request goes to Server B, the next server in turn.",
+    s.send("you", "lb", "GET /feed"),
+    s.send("lb", "b", "GET /feed"),
+  ),
+  probe: s.step(
+    "Every few seconds the balancer sends a health check to each server. Both answer 200.",
+    s.parallel(s.send("lb", "a", "GET /health"), s.send("lb", "b", "GET /health")),
+    s.parallel(s.send("a", "lb", "200", "response"), s.send("b", "lb", "200", "response")),
   ),
   fail: s.step(
-    "Server A stops answering health checks. The balancer takes it out of rotation.",
+    "Server A misses 3 health checks in a row. The balancer takes it out of the pool.",
     s.down("a"),
-    s.note("lb", "health check failed"),
+    s.note("lb", "A failed 3 checks"),
   ),
   reroute: s.step(
-    "Traffic keeps flowing to the servers that are still up.",
-    s.send("you", "lb", "GET /"),
-    s.send("lb", "b", "GET /"),
+    "New requests go only to Server B, which still passes its checks.",
+    s.send("you", "lb", "GET /feed"),
+    s.send("lb", "b", "GET /feed"),
   ),
   scale: s.step(
-    "To handle more load, add another server behind the balancer. Nothing changes for you.",
+    "Server C starts, passes its first health check, and joins the pool.",
     s.show("c"),
-    s.send("you", "lb", "GET /"),
-    s.send("lb", "c", "GET /"),
+    s.send("lb", "c", "GET /health"),
+    s.send("c", "lb", "200", "response"),
+  ),
+  drain: s.step(
+    "Server B is leaving for a deploy. The balancer sends it nothing new, and B finishes its last request.",
+    s.note("b", "draining"),
+    s.send("b", "lb", "200", "response"),
+    s.send("lb", "you", "200", "response"),
   ),
   stateless: s.step(
-    "Any server can take any request only if servers keep no session state. Sessions move to a shared store.",
+    "B is gone, and no user noticed. Sessions live in a shared store, so Server C can serve anyone.",
+    s.hide("b"),
     s.show("sessions"),
-    s.parallel(s.send("b", "sessions", "session", "data"), s.send("c", "sessions", "session", "data")),
+    s.send("you", "lb", "GET /feed"),
+    s.send("lb", "c", "GET /feed"),
+    s.send("c", "sessions", "session?", "data"),
+    s.send("sessions", "c", "session", "data"),
   ),
 }))
 
 export default defineLesson({
   title: "Load balancer",
-  summary: "Spread requests across many servers, route around the broken ones, and add capacity without anyone noticing.",
+  summary: "How a load balancer spreads requests over many servers, skips the ones that fail, and lets the pool grow or shrink while users keep working.",
   track: "edge",
-  order: 3,
-  tags: ["L4", "L7", "round robin", "horizontal scaling", "health check", "sticky sessions"],
+  order: 2,
+  tags: [
+    "L4",
+    "L7",
+    "round robin",
+    "least connections",
+    "health check",
+    "sticky sessions",
+    "TLS termination",
+    "connection draining",
+    "horizontal scaling",
+  ],
   sources: [
     {
-      use: "adapted",
+      use: "link",
       repo: "donnemartin/system-design-primer",
-      section: "Load balancer",
-      anchor: "load-balancer",
+      title: "The System Design Primer: load balancer",
+      url: "https://github.com/donnemartin/system-design-primer#load-balancer",
     },
     {
       use: "link",
-      title: "HAProxy architecture guide",
-      url: "http://www.haproxy.org/download/1.2/doc/architecture.txt",
+      title: "NGINX: HTTP load balancing",
+      url: "https://nginx.org/en/docs/http/load_balancing.html",
     },
     {
       use: "link",
-      repo: "binhnguyennus/awesome-scalability",
-      title: "awesome-scalability: load balancing",
-      url: "https://github.com/binhnguyennus/awesome-scalability#load-balancing",
+      title: "Envoy: outlier detection",
+      url: "https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/outlier",
+    },
+    {
+      use: "link",
+      title: "Michael Mitzenmacher: The Power of Two Choices in Randomized Load Balancing",
+      url: "https://www.eecs.harvard.edu/~michaelm/postscripts/mythesis.pdf",
     },
   ],
   scene,
   body: ({ cue }) => md`
-    ## What it does
+    ## One server is not enough
 
-    A load balancer sits in front of a group of servers. ${cue("arrive", "Clients talk to the balancer")},
-    and ${cue("pick", "it forwards each request to one server")} and
-    ${cue("reply", "relays the answer back")}. Clients never learn which server did the work.
+    Inkwell's feed gets about 2,300 requests a second on an average day and
+    about 7,000 at the evening peak. Say one server can handle 1,500 feed
+    requests a second before it slows down. You run it at about two thirds of
+    that, 1,000 a second, so a spike has room. The peak then needs 7 servers,
+    and an 8th so the pool survives losing one.
 
-    It earns its place three ways:
+    A phone cannot choose among 8 servers. It does not know which servers
+    exist, which are busy, or which crashed a minute ago. So
+    ${cue("arrive", "every request goes to one address")}, and a load balancer
+    behind that address chooses a server. The servers it can choose from are
+    called the pool.
 
-    - It ${cue("fail", "stops sending requests to unhealthy servers")}.
-    - It spreads load so ${cue("next", "no single server gets all of it")}.
-    - It removes the single server as a single point of failure.
+    ## What happens to one request
 
-    > note: The balancer itself can now be the single point of failure. Teams run two, in active-passive or active-active mode.
+    ${cue("pick", "The balancer picks a server from the pool")} and forwards the
+    request. Round robin is the simplest rule. It takes the servers in turn, A,
+    then B, then C, then A again.
+    ${cue("reply", "The response comes back through the balancer")}, so the
+    client only ever talks to one address.
+    ${cue("next", "The next request goes to the next server in turn")}, even when
+    it comes from the same user.
 
-    ## How it picks a server
+    Most web balancers hold two connections for each request, one to the
+    client and one to the server. That is why the balancer can send each
+    request to a different server, and why it sees every response a server
+    returns.
 
-    Common rules are random, least loaded, round robin (optionally weighted), and
-    session cookies. A **layer 4** balancer decides from IP addresses and ports
-    only. A **layer 7** balancer reads the request itself, its path, headers, and
-    cookies, so it can send \`/video\` to video servers and \`/billing\` to hardened
-    ones. Layer 7 costs more work per request.
+    ## Health checks
 
-    ## Horizontal scaling
+    A balancer that sends requests to a dead server is worse than no balancer.
+    So ${cue("probe", "it sends a health check to each server")} every few
+    seconds, often a \`GET /health\` that should return 200. A server that
+    misses a set number of checks in a row counts as unhealthy.
+    ${cue("fail", "Server A misses 3 checks")}, and the balancer takes it out of
+    the pool. ${cue("reroute", "New requests go only to the servers that pass")}.
+    When A passes its checks again, often 2 in a row, it rejoins.
 
-    ${cue("scale", "Adding cheap servers behind the balancer")} is called scaling out.
-    It is cheaper and more available than buying one bigger machine, which is
-    scaling up.
+    These are active checks, where the balancer sends extra requests to learn
+    each server's state. Passive checks watch real traffic instead. If a server
+    returns 5 errors in a row, or its connections time out, the balancer stops
+    using it for a while. Passive checks react faster when traffic is heavy.
+    Active checks still work when there is no traffic at all. Many setups use
+    both.
 
-    > tradeoff: Scaling out only works if ${cue("stateless", "servers hold no user session")}. Keep sessions in a shared database or cache.
+    The numbers decide how long users see errors. With a check every 5 seconds
+    and 3 misses to fail, a dead server keeps getting requests for up to 15
+    seconds. Checking every second cuts that to 3 seconds. The cost is more
+    check traffic, and more false alarms from a single slow reply.
 
-    ${cue("reroute", "Losing a server then costs capacity, not correctness")}.
+    > pitfall: Do not make \`/health\` query a database that every server shares. If that database slows down, every server fails its check at once and the balancer empties the whole pool. Let the check test only what one server owns, such as whether its process answers and its disk has space.
+
+    ## Choosing a server
+
+    Round robin assumes that every server is the same size and every request
+    costs the same. Real pools break both assumptions, so balancers offer other
+    rules.
+
+    - **Weighted round robin.** A server with weight 2 gets twice as many requests as a server with weight 1. It suits a pool of mixed machine sizes.
+    - **Least connections.** Each request goes to the server with the fewest open connections. It suits long connections, such as WebSockets or large uploads, where round robin can pile many long sessions onto one server.
+    - **Least response time.** The balancer picks the server that has answered fastest lately. Load moves away from a server that slows down, before its health checks fail.
+    - **Hashing.** The balancer turns a key, such as the client's IP address or the user id, into a server. The same key always reaches the same server, which helps when each server caches data for its own users. A later lesson on consistent hashing shows how to add a server without moving most keys.
+
+    Least connections and least response time need the balancer to track the
+    state of every server. When you run many balancers, each one sees only its
+    own traffic, and they can all rush to the same idle server. A cheap rule
+    that holds up at scale is to pick 2 servers at random and send the request
+    to the one with fewer connections. It is called the power of two choices.
+
+    ## Layer 4 and layer 7
+
+    A **layer 4** balancer works with TCP and UDP connections. It sees IP
+    addresses and ports, picks a server when a connection opens, and passes the
+    bytes along without reading them. It is fast, and it works for any protocol,
+    from HTTP to a database connection.
+
+    A **layer 7** balancer reads the HTTP request. It can send \`/upload\` to
+    servers with fast disks and every other path to the feed servers. It can
+    route on a header or a cookie, retry a failed request on another server,
+    and add a header with the client's real IP address. Reading every request
+    costs CPU, so one layer 7 machine handles fewer requests than one layer 4
+    machine.
+
+    To read HTTPS, a layer 7 balancer has to decrypt it. This is called TLS
+    termination. The balancer holds the certificate, and the servers behind it
+    receive plain HTTP. You renew certificates in one place, and the servers
+    spend no CPU on encryption.
+
+    > tradeoff: After TLS termination, traffic inside your network is unencrypted. Many teams accept that on a private network. When rules or threats call for encryption everywhere, the balancer opens a new TLS connection to each server. That costs CPU on both sides and keeps every hop encrypted.
+
+    Large sites often use both kinds. A layer 4 tier spreads connections over
+    many layer 7 balancers, and the layer 7 balancers do the routing.
+
+    ## Adding and removing servers
+
+    Adding capacity is a change to the pool.
+    ${cue("scale", "A new server starts, passes its first health checks, and joins")}.
+    No user notices. Autoscaling does this for you, on a schedule or from a
+    metric, such as adding servers when average CPU passes 60%.
+
+    Removing a server needs more care, because it may be in the middle of
+    requests. Shutting it down breaks them.
+    ${cue("drain", "Connection draining")} fixes this. The balancer stops sending
+    the server new requests and waits for the open ones to finish. Then the
+    server shuts down. Set a limit, such as 30 seconds, so one stuck upload
+    cannot hold up a deploy. A rolling deploy drains one or two servers at a
+    time, so the pool never loses much capacity at once.
+
+    ## Sessions and sticky routing
+
+    Adding and removing servers freely has one condition. Say a user logs in
+    and Server A keeps the login in its memory. The next request goes to Server
+    B, which has never seen this user, and the user is logged out.
+
+    One fix is sticky sessions. The balancer sets a cookie, or hashes the
+    client's address, and keeps sending that user to Server A. It works, and it
+    has costs. Load becomes uneven, because a server keeps its users even when
+    it gets busy. A new server gets only new users, so it fills slowly. When
+    Server A dies, every user on it loses their session.
+
+    The better fix is to keep servers stateless.
+    ${cue("stateless", "Sessions live in a shared store")}, such as a cache or a
+    database, and the server reads the session on each request. Any server can
+    then serve any user, and losing a server loses no logins. The price is one
+    extra lookup per request, usually under a millisecond from an in-memory
+    cache.
+
+    ## When the balancer fails
+
+    Every request now passes through the balancer, so one balancer is a single
+    point of failure. There are three common answers.
+
+    - **A pair with one shared address.** Two balancers watch each other. In active-passive mode one handles all traffic, and the other takes over the address if the first stops answering. In active-active mode both handle traffic all the time.
+    - **Several balancers behind DNS.** The domain name returns several addresses, one per balancer, and clients spread across them. Clients cache DNS answers, so a dead balancer's address can linger for minutes. DNS providers that run their own health checks shorten that.
+    - **A managed balancer.** A cloud provider runs many machines behind one name and replaces the ones that fail. You still choose the rules, the health checks and the timeouts.
+
+    > note: Everything above is local load balancing, which picks a server inside one data center. Global load balancing picks the data center first, usually the nearest healthy one, through DNS or anycast routing. A request often passes through both.
+
+    ## In a design review
+
+    When a design shows a load balancer, ask these questions.
+
+    1. What does the health check test, and how long does a dead server keep getting requests?
+    2. Which rule picks a server, and does it fit how long the connections last?
+    3. Is it layer 4 or layer 7, and where does TLS end?
+    4. Where do sessions live? If the answer is sticky sessions, what happens when that server dies?
+    5. How does a server leave the pool during a deploy?
+    6. What happens when the balancer itself fails?
+
+    A summary for Inkwell's feed could read like this. A managed layer 7
+    balancer ends TLS, checks each server every 5 seconds, and sends requests
+    by round robin to 8 identical stateless servers. Sessions live in a shared
+    cache, and a deploy drains each server for up to 30 seconds.
   `,
   quiz: [
     {
       kind: "choice",
-      prompt: "Server A fails its health checks. What does the load balancer do?",
+      prompt: "Server A fails 3 health checks in a row. What does the load balancer do?",
       options: [
         { text: "Stops routing to Server A and keeps using the others", correct: true },
-        { text: "Returns errors to every client until A recovers", why: "Only requests already in flight to A are affected." },
+        { text: "Returns errors to every client until A recovers", why: "Only requests already on their way to A fail. The other servers keep serving." },
         { text: "Restarts Server A", why: "Restarting is an orchestrator's job, not the balancer's." },
       ],
-      explain: "Health checks let the balancer route around a dead server.",
+      explain: "Health checks let the balancer route around a dead server. A rejoins once it passes its checks again.",
       replay: "fail",
     },
     {
       kind: "choice",
-      prompt: "Which balancer can route /video and /billing to different servers?",
+      prompt: "Inkwell wants /upload to go to servers with fast disks and every other path to the feed servers. Which balancer can do this?",
       options: [
-        { text: "Layer 4", why: "Layer 4 sees only addresses and ports, not the path." },
+        { text: "Layer 4", why: "A layer 4 balancer sees addresses and ports. The path is inside the HTTP request, which it never reads." },
         { text: "Layer 7", correct: true },
+        { text: "Either one, if every server has the same disks", why: "Same disks remove the reason to split, but the question asks which balancer can route on the path. Only layer 7 reads it." },
       ],
-      explain: "Layer 7 reads the HTTP request, so it can route on the path.",
+      explain: "A layer 7 balancer reads the HTTP request, so it can route on the path, a header or a cookie.",
+    },
+    {
+      kind: "choice",
+      prompt: "Inkwell adds chat. Each user keeps one WebSocket open for about an hour. Which rule spreads the load best?",
+      options: [
+        { text: "Least connections", correct: true },
+        { text: "Round robin", why: "Round robin hands out new connections in turn and ignores how many are still open. A server that got many long chats keeps them while new ones keep arriving." },
+        { text: "A hash of the client's IP address", why: "Hashing ignores how busy each server is. Many users behind one office network share an address and land on the same server." },
+      ],
+      explain: "With long connections, the count of open connections is the load. Least connections balances that count.",
     },
     {
       kind: "multi",
@@ -136,17 +299,54 @@ export default defineLesson({
       options: [
         { text: "Servers keep no per-user session in memory", correct: true },
         { text: "Sessions live in a shared store", correct: true },
-        { text: "Every server has more RAM than the last", why: "Scaling out uses identical, commodity machines." },
+        { text: "Every server has more RAM than the last", why: "Scaling out adds identical machines. Their size does not decide whether any server can serve any user." },
       ],
-      explain: "Any server must be able to serve any request.",
+      explain: "Any server must be able to serve any request, so no user may depend on one server's memory.",
       replay: "stateless",
     },
     {
+      kind: "multi",
+      prompt: "Inkwell turns on sticky sessions so it can keep logins in server memory. What does that cost?",
+      options: [
+        { text: "Load can become uneven, because users stay on the server they started on", correct: true },
+        { text: "Users on a server that dies lose their session", correct: true },
+        { text: "The balancer can no longer run health checks", why: "Health checks work the same way. The balancer still skips a failed server, and that server's users lose their session." },
+        { text: "Every request needs a lookup in a session store", why: "That is the cost of a shared session store, the option sticky sessions avoid." },
+      ],
+      explain: "Sticky sessions tie each user to one server, so that server's load and failures become that user's problem.",
+    },
+    {
+      kind: "choice",
+      prompt: "You are deploying a new version and must take Server B out of the pool. What do you do first?",
+      options: [
+        { text: "Stop sending it new requests and let it finish the open ones", correct: true },
+        { text: "Shut it down and let health checks reroute traffic", why: "Requests in flight on B fail, and the balancer only notices after B misses several checks." },
+        { text: "Restart the balancer so it forgets B", why: "Restarting the balancer drops every open connection, not only B's." },
+      ],
+      explain: "Connection draining lets a server leave without breaking the requests it is serving.",
+      replay: "drain",
+    },
+    {
+      kind: "choice",
+      prompt: "Server A crashes. A request reaches it 4 seconds later, before A has missed enough health checks. What happens to that request?",
+      options: [
+        { text: "It fails or times out, unless the balancer retries it on another server", correct: true },
+        { text: "Nothing, because the balancer knows at once and never sends it", why: "The balancer learns about the crash only from missed checks or failed requests. Until A misses enough checks, it still counts as healthy." },
+        { text: "It waits at the balancer until A comes back", why: "A balancer does not hold requests for a dead server. The client gets an error or a timeout." },
+      ],
+      explain: "Health checks take time to notice a crash. Retries and passive checks shorten the window, but they cannot close it.",
+    },
+    {
       kind: "order",
-      prompt: "Put one request's path in order.",
-      items: ["Client sends to the balancer", "Balancer picks a server", "Server responds to the balancer", "Balancer responds to the client"],
-      explain: "The balancer sits on both legs of the trip.",
-      replay: "reply",
+      prompt: "Put the life of a failed server in order.",
+      items: [
+        "Server A stops answering",
+        "A misses 3 health checks in a row",
+        "The balancer takes A out of the pool",
+        "A passes its checks again and rejoins",
+      ],
+      explain: "The balancer removes a server only after several misses, and adds it back only after several passes.",
+      replay: "fail",
     },
   ],
 })

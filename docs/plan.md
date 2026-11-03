@@ -1,6 +1,6 @@
 # Build plan
 
-This plan builds a personal web app for learning system design. Each lesson has text, an animated hand-drawn diagram and a quiz. Lesson text adapts `donnemartin/system-design-primer` under CC BY 4.0 and links to the other repos listed in `docs/sources.md`. The UI uses Looseleaf components and the ink engine in `src/lib/ink`.
+This plan builds a personal web app for learning system design. Each lesson has text, an animated hand-drawn diagram and a quiz. Lesson text is our own writing and links to the repos listed in `docs/sources.md` for further reading. The UI uses Looseleaf components and the ink engine in `src/lib/ink`.
 
 The app is built in 15 steps. The first complete lesson (text, diagram and quiz for load balancers) works at step 11. After step 15 the app is on GitHub Pages, and each later step adds one lesson.
 
@@ -67,7 +67,7 @@ Lessons follow `docs/curriculum.md`, which lists our own 12 chapters and 69 less
 ## Decisions already made
 
 - A lesson is one TypeScript file. The alternative was MDX with YAML, a scene JSON file and a quiz YAML file. It lost because a typo in a cue or a node id would only fail at runtime, and the license rule would need a custom Vite plugin.
-- Adapting a link-only repo is a compile error. `SourceRef` with `use: "adapted"` accepts only repos whose rule is Adapt, and a test fails the build when `src/content/sources.ts` and `docs/sources.md` disagree. Paraphrase of a link-only repo can't be caught by a test, so Opus reviews every lesson's text.
+- No lesson adapts a source. `SourceRef` accepts only `use: "link"`, so `use: "adapted"` is a compile error for every repo, and a test fails the build when `src/content/sources.ts` and `docs/sources.md` disagree. Paraphrase can't be caught by a test, so Opus reviews every lesson's text.
 - Progress lives in localStorage under `sd.progress`. Each write merges with what is already stored, so two tabs never erase each other. There is no live sync, and another tab sees new progress after a reload.
 - A lesson counts as done when its quiz is passed. Watching the diagram is recorded but not required.
 - Routing is by hash, such as `#/learn/load-balancer/step/pick`. GitHub Pages then needs no 404 fallback.

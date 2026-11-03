@@ -83,7 +83,7 @@ export function Shell({ children }: { children: ReactNode }) {
         </div>
         <SearchPalette />
       </header>
-      <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 pb-12 md:grid md:grid-cols-[14rem_1fr] md:px-8">
+      <div className="mx-auto flex max-w-6xl flex-col gap-6 overflow-x-clip px-4 pb-12 md:grid md:grid-cols-[14rem_1fr] md:px-8">
         <aside data-testid="sidebar" aria-label="Lessons" className="hidden md:block">
           <LessonNav />
         </aside>

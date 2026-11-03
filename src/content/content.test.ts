@@ -6,15 +6,9 @@ import { lintLayout } from "@/scene/layout"
 describe.each(curriculum.flat.map((lesson) => [lesson.slug, lesson] as const))(
   "lesson %s",
   (_slug, lesson) => {
-    test("adapted sources name only adapt repos", () => {
-      for (const source of lesson.sources) {
-        if (source.use === "adapted") expect(SOURCES[source.repo].rule).toBe("adapt")
-      }
-    })
-
     test("link sources with a repo point inside that repo's url", () => {
       for (const source of lesson.sources) {
-        if (source.use === "link" && source.repo !== undefined) {
+        if (source.repo !== undefined) {
           expect(source.url.startsWith(SOURCES[source.repo].url)).toBe(true)
         }
       }

@@ -1,6 +1,6 @@
 import { expect, test } from "vitest"
 import { defineLesson, defineScene, md } from "./author"
-import { buildCurriculum, curriculum, neighbors, type TrackId } from "./curriculum"
+import { buildCurriculum, curriculum, neighbors, TRACKS, type TrackId } from "./curriculum"
 import type { Quiz } from "./quiz"
 
 const baseQuiz: Quiz<never> = [
@@ -126,16 +126,36 @@ test("the real curriculum holds the load-balancer lesson", () => {
   const lesson = curriculum.bySlug.get("load-balancer")
 
   expect(curriculum.tracks.map((track) => track.id)).toEqual(["edge"])
-  expect(lesson?.minutes).toBe(2)
+  expect(lesson?.order).toBe(2)
+  expect(lesson?.minutes).toBe(9)
   expect(lesson?.headings.map((heading) => heading.id)).toEqual([
-    "what-it-does",
-    "how-it-picks-a-server",
-    "horizontal-scaling",
+    "one-server-is-not-enough",
+    "what-happens-to-one-request",
+    "health-checks",
+    "choosing-a-server",
+    "layer-4-and-layer-7",
+    "adding-and-removing-servers",
+    "sessions-and-sticky-routing",
+    "when-the-balancer-fails",
+    "in-a-design-review",
   ])
-  expect(lesson?.attributions.map((entry) => entry.text)).toEqual([
-    'Adapted from "Load balancer" in The System Design Primer by Donne Martin.',
+  expect(lesson?.timeline.steps.map((step) => step.id)).toEqual([
+    "arrive", "pick", "reply", "next", "probe", "fail", "reroute", "scale", "drain", "stateless",
   ])
-  expect(lesson?.furtherReading).toHaveLength(2)
+  expect(lesson?.quiz).toHaveLength(8)
+  expect(lesson?.sources.map((source) => source.url)).toEqual([
+    "https://github.com/donnemartin/system-design-primer#load-balancer",
+    "https://nginx.org/en/docs/http/load_balancing.html",
+    "https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/outlier",
+    "https://www.eecs.harvard.edu/~michaelm/postscripts/mythesis.pdf",
+  ])
+})
+
+test("TRACKS lists the 12 chapters in reading order", () => {
+  expect(TRACKS.map((track) => track.id)).toEqual([
+    "foundations", "estimation", "network", "edge", "application", "data",
+    "cache", "async", "distributed", "operations", "security", "case-studies",
+  ])
 })
 
 test("finishLesson counts reading and scene time and defaults tags", () => {

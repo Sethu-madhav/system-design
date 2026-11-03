@@ -62,12 +62,12 @@ test("dragging the slider to the end shows the last caption", async ({ page }) =
   await page.mouse.down()
   await page.mouse.move(trackBox.x + trackBox.width + 40, trackBox.y + trackBox.height / 2)
   await page.mouse.up()
-  await expect(page.getByTestId("step-count")).toHaveText("Step 8 of 8")
-  await expect(page.getByTestId("caption")).toHaveText("Any server can take any request only if servers keep no session state. Sessions move to a shared store.")
+  await expect(page.getByTestId("step-count")).toHaveText("Step 10 of 10")
+  await expect(page.getByTestId("caption")).toHaveText("B is gone, and no user noticed. Sessions live in a shared store, so Server C can serve anyone.")
   await expect(page.getByTestId("scene")).toHaveAttribute("data-mode", "paused")
 })
 
-test("clicking the cue 'stops sending requests to unhealthy servers' sets data-step-id=fail", async ({ page }) => {
+test("clicking the cue 'Server A misses 3 checks' sets data-step-id=fail", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 })
   await gotoReady(page, path)
   const scene = page.getByTestId("scene")
@@ -82,7 +82,7 @@ test("deep link #/learn/load-balancer/step/scale opens at scale", async ({ page 
   const scene = page.getByTestId("scene")
   await expect(scene).toHaveAttribute("data-step-id", "scale")
   await expect(scene).toHaveAttribute("data-mode", "paused")
-  await expect(page.getByTestId("step-count")).toHaveText("Step 7 of 8")
+  await expect(page.getByTestId("step-count")).toHaveText("Step 8 of 10")
 })
 
 test("with emulateMedia reducedMotion=reduce: data-motion=reduced, no packet elements during Play, and captions still advance", async ({ page }) => {

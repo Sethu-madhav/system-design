@@ -6,7 +6,7 @@ test("home lists the Edge track with the Load balancer card", async ({ page }) =
   await expect(track.getByRole("heading", { level: 2, name: "Edge and traffic" })).toBeVisible()
   const card = track.locator('[data-testid="lesson-card"][data-slug="load-balancer"]')
   await expect(card).toContainText("Load balancer")
-  await expect(card).toContainText("2 min")
+  await expect(card).toContainText("9 min")
 })
 
 test("clicking the card opens #/learn/load-balancer", async ({ page }) => {
@@ -16,24 +16,26 @@ test("clicking the card opens #/learn/load-balancer", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1, name: "Load balancer" })).toBeVisible()
 })
 
-test("lesson shows h2 'What it does' and 8 cues", async ({ page }) => {
+test("lesson shows h2 'One server is not enough' and 10 cues", async ({ page }) => {
   await gotoReady(page, "/#/learn/load-balancer")
-  await expect(page.locator('[data-testid="prose"] h2[id="what-it-does"]')).toHaveText("What it does")
-  await expect(page.locator('[data-testid="prose"] [data-cue]')).toHaveCount(8)
+  await expect(page.locator('[data-testid="prose"] h2[id="one-server-is-not-enough"]')).toHaveText("One server is not enough")
+  await expect(page.locator('[data-testid="prose"] [data-cue]')).toHaveCount(10)
 })
 
-test("attribution links to the primer anchor and to the CC BY 4.0 license and says text was changed", async ({ page }) => {
+test("the lesson has no attribution section and lists the primer under further reading", async ({ page }) => {
   await gotoReady(page, "/#/learn/load-balancer")
-  const attribution = page.locator('[data-testid="attribution"]')
-  await expect(attribution.locator('a[href="https://github.com/donnemartin/system-design-primer#load-balancer"]')).toBeVisible()
-  await expect(attribution.locator('a[href="https://creativecommons.org/licenses/by/4.0/"]')).toBeVisible()
-  await expect(attribution).toContainText("Text paraphrased and shortened. Diagrams are original.")
+  await expect(page.getByTestId("attribution")).toHaveCount(0)
+  await expect(page.getByRole("heading", { level: 2, name: "Attribution" })).toHaveCount(0)
+  await expect(page.locator('a[href="https://creativecommons.org/licenses/by/4.0/"]')).toHaveCount(0)
+  const reading = page.getByTestId("further-reading")
+  await expect(reading.locator("a")).toHaveCount(4)
+  await expect(reading.locator('a[href="https://github.com/donnemartin/system-design-primer#load-balancer"]')).toHaveText("The System Design Primer: load balancer")
 })
 
-test("deep link #/learn/load-balancer/horizontal-scaling scrolls the heading into view", async ({ page }) => {
+test("deep link #/learn/load-balancer/adding-and-removing-servers scrolls the heading into view", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 500 })
-  await gotoReady(page, "/#/learn/load-balancer/horizontal-scaling")
-  await expect(page.locator("#horizontal-scaling")).toBeInViewport()
+  await gotoReady(page, "/#/learn/load-balancer/adding-and-removing-servers")
+  await expect(page.locator("#adding-and-removing-servers")).toBeInViewport()
   await expect(page.getByRole("heading", { level: 1, name: "Load balancer" })).not.toBeInViewport()
 })
 
@@ -87,7 +89,7 @@ test("every text line on a lesson card sits just above a ruled line", async ({ p
 test("text links are blue and underlined", async ({ page }) => {
   const blue = "rgb(44, 79, 158)"
   const pages: [string, string][] = [
-    ["/#/learn/load-balancer", '[data-testid="attribution"] a, [data-testid="further-reading"] a, [data-testid="lesson-nav"] a, [data-testid="prose"] a'],
+    ["/#/learn/load-balancer", '[data-testid="further-reading"] a, [data-testid="lesson-nav"] a, [data-testid="prose"] a'],
     ["/#/nowhere", '[data-testid="not-found"] a'],
   ]
   for (const [path, selector] of pages) {

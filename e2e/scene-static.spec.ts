@@ -33,11 +33,11 @@ test("deep link to 'reroute' hides server C and 'scale' shows it", async ({ page
 
 test("caption text matches the step", async ({ page }) => {
   await gotoReady(page, path)
-  await expect(page.getByTestId("step-count")).toHaveText("Step 1 of 8")
-  await expect(page.getByTestId("caption")).toHaveText("Your request goes to the load balancer, not to a server.")
+  await expect(page.getByTestId("step-count")).toHaveText("Step 1 of 10")
+  await expect(page.getByTestId("caption")).toHaveText("Your request goes to the load balancer. You never see the servers behind it.")
   await gotoReady(page, `${path}/step/pick`)
-  await expect(page.getByTestId("step-count")).toHaveText("Step 2 of 8")
-  await expect(page.getByTestId("caption")).toHaveText("The balancer picks a healthy server, here by round robin, and forwards the request.")
+  await expect(page.getByTestId("step-count")).toHaveText("Step 2 of 10")
+  await expect(page.getByTestId("caption")).toHaveText("The balancer picks Server A by round robin and forwards the request.")
 })
 
 test("Prev returns to the previous caption", async ({ page }) => {
@@ -46,7 +46,7 @@ test("Prev returns to the previous caption", async ({ page }) => {
   await expect(prev).toBeDisabled()
   await gotoReady(page, `${path}/step/reply`)
   await prev.click()
-  await expect(page.getByTestId("caption")).toHaveText("The balancer picks a healthy server, here by round robin, and forwards the request.")
+  await expect(page.getByTestId("caption")).toHaveText("The balancer picks Server A by round robin and forwards the request.")
   await expect(page.getByTestId("scene")).toHaveAttribute("data-mode", "paused")
 })
 
@@ -58,4 +58,14 @@ test("the cue for the current step has data-active", async ({ page }) => {
   await gotoReady(page, `${path}/step/pick`)
   await expect(prose.locator('[data-cue="pick"]')).toHaveAttribute("data-active", "")
   await expect(prose.locator('[data-cue="arrive"]')).not.toHaveAttribute("data-active", "")
+})
+
+test("deep link to 'drain' keeps server B with a draining note and 'stateless' hides B and shows the session store", async ({ page }) => {
+  const scene = page.getByTestId("scene")
+  await gotoReady(page, `${path}/step/drain`)
+  await expect(scene.locator('[data-scene-node="b"]')).toHaveAttribute("data-visible", "true")
+  await gotoReady(page, `${path}/step/stateless`)
+  await expect(scene.locator('[data-scene-node="b"]')).toHaveAttribute("data-visible", "false")
+  await expect(scene.locator('[data-scene-node="sessions"]')).toHaveAttribute("data-visible", "true")
+  await expect(scene.locator('[data-scene-node="a"]')).toHaveAttribute("data-down", "")
 })
