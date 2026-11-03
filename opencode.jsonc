@@ -1,5 +1,5 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "instructions": ["Instructions.md", ".opencode/pstack-models.md"],
-  "skills": ["./vendor/pstack/skills"]
+  "skills": ["./vendor/pstack/skills", "./.agents/skills"]
 }

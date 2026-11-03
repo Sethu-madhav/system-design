@@ -27,3 +27,9 @@
   ```
   *(Examples: `@looseleaf/switch`, `@looseleaf/dialog`, `@looseleaf/accordion`, `@looseleaf/tabs`, `@looseleaf/tooltip`)*
 
+
+## Writing curriculum, chapters and lessons
+
+- Any agent that writes or edits `docs/curriculum.md`, a chapter, or lesson text, scenes and quizzes (in a spec under `docs/steps/` or in `src/content/lessons/`) must apply the unslop skill to that text before handing it back.
+- Read `.agents/skills/unslop/SKILL.md` in full first. In Claude Code, run `/unslop` on the draft. In OpenCode, load the `unslop` skill.
+- Check every rule in the skill against the draft and rewrite until none apply. Rule 13 (no em dashes) and rule 17 (sentence case headings) apply to every heading, quiz question and answer.
