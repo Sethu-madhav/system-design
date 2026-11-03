@@ -75,7 +75,7 @@ You write or change exactly these 6 files, plus the 12 from the add command abov
 | File | Change |
 | :--- | :--- |
 | `src/search/search.ts` | new. Types, `tokenize`, `buildIndex` and `search` |
-| `src/search/search.test.ts` | new, 11 tests |
+| `src/search/search.test.ts` | new, 13 tests |
 | `src/search/index.ts` | new. Re-exports |
 | `src/app/SearchPalette.tsx` | new. The button, the shortcut listener and the dialog |
 | `src/app/Shell.tsx` | renders `<SearchPalette />` in the header |
@@ -201,7 +201,7 @@ Lesson `queues`, order 2:
 A queue absorbs bursts. Workers drain it at their own pace, and caching results is a separate concern.
 ```
 
-Write exactly these 11 tests. Each one names what it checks:
+Write exactly these 13 tests. Each one names what it checks:
 
 1. `tokenize lowercases and strips accents`. `tokenize("Café, ÉCOLE!")` equals `["cafe", "ecole"]`.
 2. `tokenize keeps l4 and l7`. `tokenize("L4 vs L7 at a 7")` equals `["l4", "vs", "l7", "at"]`.
@@ -214,8 +214,10 @@ Write exactly these 11 tests. Each one names what it checks:
 9. `snippet centers on the first match`. For `drain`, the snippet's `before` is `A queue absorbs bursts. Workers `, its `match` is `drain`, and its `after` starts with ` it at their own pace`, ends with `…` and has length 61. For `concern`, `before` starts with `…` and has length 61, `match` is `concern` and `after` is `.`.
 10. `empty query returns []`. `""`, `"   "` and `"a 7"` all return `[]`.
 11. `limit respected`. `search(index, "the", 2)` has length 2. `search(index, "the")` has more than 2 hits.
+12. `tag hit scores weight 3`. `cdn` returns exactly the `caching` lesson document with score 6.
+13. `ties keep document order`. `app` returns the `miss`, `fill` and `push` steps, each with score 4, in that order, then the `write-through` section with score 2.
 
-Test 4 is new and was not in the design. It is the only test that fails when the whole-word bonus is removed.
+Tests 4, 12 and 13 are new and were not in the design. Test 4 is the only test that fails when the whole-word bonus is removed. Tests 12 and 13 cover the tag weight and the tie break, which the e2e tests cannot see because the palette always shows lessons first.
 
 ### `src/search/index.ts` (new)
 
@@ -289,7 +291,7 @@ Use `test`, `expect` and `gotoReady` from `./fixtures`. Every test starts with `
 
 1. `pnpm install`
 2. `pnpm build` exits 0. Its content run still shows 68 tests passing, because it runs `src/content` only. The existing Vite warning about a chunk over 500 kB is expected.
-3. `pnpm test` shows 184 tests passing in 14 files. That is the 173 from before plus the 11 search tests.
+3. `pnpm test` shows 186 tests passing in 14 files. That is the 173 from before plus the 13 search tests.
 4. `pnpm e2e` shows 41 tests passing. That is the 37 from before plus these 4. Run it 3 times in a row. All 3 runs must pass.
 
 ## Done means
@@ -306,9 +308,11 @@ Use `test`, `expect` and `gotoReady` from `./fixtures`. Every test starts with `
   - making `target` return the lesson href for a section fails e2e test 3;
   - dropping the editable-target check from the `/` shortcut fails e2e test 1;
   - not clearing `query` in the Cmd-K branch fails e2e test 1;
-  - removing `flex-1` and `min-w-0` from the result wrapper fails e2e test 2.
+  - removing `flex-1` and `min-w-0` from the result wrapper fails e2e test 2;
+  - giving tags weight 1 instead of 3 fails unit test `tag hit scores weight 3`;
+  - reversing the position tie break fails unit test `ties keep document order`.
 - No comments, `any`, `as` casts or `!` assertions in the files you wrote.
 
 ## Report
 
-List every file you changed. Paste the output of commands 2, 3 and 4 (all three e2e runs). Paste the failing output of the ten planted bugs. Say whether you hit anything the spec did not cover, and what you did about it.
+List every file you changed. Paste the output of commands 2, 3 and 4 (all three e2e runs). Paste the failing output of the twelve planted bugs. Say whether you hit anything the spec did not cover, and what you did about it.
