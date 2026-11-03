@@ -21,8 +21,8 @@ Every step goes through the same five stages. You type the words in the right co
 | :--- | :--- | :--- | :--- |
 | 1. Spec | Opus | Writes `docs/steps/NN-<name>.md` from `docs/design/steps.md` and the sketch. The spec lists files, exact types, named tests and the commands that must pass. | `write the spec for step N` |
 | 2. Read the spec | You | Read it. Ask about anything unclear. Opus fixes the spec, not the code. | `approve the spec` |
-| 3. Code | DeepSeek v4.1 flash, `high` | Runs in its own worktree. Loads the **tdd** skill, writes the tests first, then the code, then runs `pnpm build`, `pnpm test` and `pnpm e2e`. If DeepSeek hits its rate limit, Codex `gpt-6-luna` at `high` takes the same spec. | nothing, Opus starts it |
-| 4. Verify | Opus | Runs the three commands again in the worktree. Reads the whole diff against the spec. Runs `/code-review`, the **blast-radius** check and the **no-comments** check. For a step with UI, opens the page in the T3 preview. Sends any fix back to a fresh DeepSeek task. | `/code-review`, `/blast-radius`, `/no-comments` when Opus asks |
+| 3. Code | Codex `gpt-6-luna`, `high` | Runs in its own worktree. Loads the **tdd** skill, writes the tests first, then the code, then runs `pnpm build`, `pnpm test` and `pnpm e2e`. | nothing, Opus starts it |
+| 4. Verify | Opus | Runs the three commands again in the worktree. Reads the whole diff against the spec. Runs `/code-review`, the **blast-radius** check and the **no-comments** check. For a step with UI, opens the page in the T3 preview. Sends every finding back to the same Codex thread to fix, then verifies again. | `/code-review`, `/blast-radius`, `/no-comments` when Opus asks |
 | 5. Approve | You | Open the page in the preview, or read the test output for a step with no UI. | `approve step N` |
 
 After you approve, Opus commits the step as one commit on `main` and logs it in `docs/decisions.tsv`. Opus never pushes without asking.
@@ -51,7 +51,7 @@ Steps 3 to 7 change nothing in the browser. You check them by reading the test n
 
 ## Lessons after step 15
 
-Each lesson is one spec and one file, `src/content/lessons/<slug>/lesson.ts`, in the same shape as the load-balancer lesson. Opus writes the lesson text, scene and quiz in the spec. DeepSeek adds the file and one Playwright line. Opus then checks the text against the primer and against `docs/sources.md`.
+Each lesson is one spec and one file, `src/content/lessons/<slug>/lesson.ts`, in the same shape as the load-balancer lesson. Opus writes the lesson text, scene and quiz in the spec. Codex adds the file and one Playwright line. Opus then checks the text against the primer and against `docs/sources.md`.
 
 Lessons follow the primer's topic order in these batches: foundations, edge, application, data, cache, async, communication, security, estimation, then case studies. A lesson has exactly one diagram. A case study that needs several diagrams becomes several lessons, such as Pastebin write path and Pastebin read path.
 
@@ -81,4 +81,4 @@ Lessons follow the primer's topic order in these batches: foundations, edge, app
 
 ## Model roles
 
-Opus 5.5 at medium writes this plan, every spec and all lesson content, and does all verification. DeepSeek v4.1 flash (free) at `high`, running in OpenCode, writes code and tests from a spec. Codex `gpt-6-luna` at `high` takes over only when DeepSeek hits its rate limit. No step compares models or asks one model to judge another.
+Opus 5.5 writes this plan, every spec and all lesson content, and does all verification. Codex `gpt-6-luna` at `high` writes code and tests from a spec, in a new thread and worktree per step. DeepSeek v4.1 flash wrote steps 1 to 9 and the start of step 10, and is no longer used. No step compares models or asks one model to judge another.

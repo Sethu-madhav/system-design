@@ -55,3 +55,5 @@ ts	phase	decision	why	evidence	result
 2026-11-03T02:53:25Z	step10	rewrote the reduced-motion test to sample packet count on every frame	toHaveCount(0) retries and passed with the planted full-motion bug	commit c8f1017	planted bug now fails with max 1
 2026-11-03T02:53:25Z	step10	changed the frame budget test from worst gap to 90th percentile under 34 ms	parallel test files share the CPU; 2 of 5 full runs had one 50 ms gap	commit 49bdf3b	5 of 5 and 4 of 4 runs green; no will-change fails with 50
 2026-11-03T02:53:25Z	step10	merged step 10 after full re-verification	build 62, test 151 in 12 files, e2e 27 in 4 runs, 5 planted bugs fail, screenshots clean	PR #10	merged
+2026-11-03T02:59:25Z	step11	wrote the step 11 quiz spec	design notes in docs/design/steps.md; ran the add command on a scratch copy to list the 9 generated files and confirm the build still passes	docs/steps/11-quiz.md	spec ready for approval
+2026-11-03T02:59:25Z	plan	switched the coder for every step to Codex gpt-6-luna high	user asked to stop launching DeepSeek	docs/plan.md	plan updated
