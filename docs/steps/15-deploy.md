@@ -37,7 +37,7 @@ Read this before the code. The prototype behind every number here ran on a throw
 
 ## Files
 
-Change exactly these 6 files:
+Change exactly these 7 files:
 
 | File | Change |
 | :--- | :--- |
@@ -47,6 +47,7 @@ Change exactly these 6 files:
 | `public/favicon.svg` | new |
 | `.github/workflows/deploy.yml` | new |
 | `e2e/deploy.spec.ts` | new, 1 test |
+| `e2e/scene-play.spec.ts` | the frame budget test skips in CI |
 
 ### `vite.config.ts`
 
@@ -74,7 +75,7 @@ export default defineConfig({
 
 ### `playwright.config.ts`
 
-`webServer` becomes an array. The first entry is today's object, unchanged. Add the second after it.
+Add `workers: process.env.CI ? 1 : undefined,` on the line after `retries`. Then `webServer` becomes an array. The first entry is today's object, unchanged. Add the second after it.
 
 ```ts
   webServer: [
@@ -192,18 +193,33 @@ One test, named exactly "app works when served under /system-design/". It uses `
 8. Click the first link named `/Load balancer/`. The URL becomes exactly `http://localhost:4174/system-design/#/learn/load-balancer`, and `scene` is visible.
 9. The list of failed responses is `[]`.
 
+### `e2e/scene-play.spec.ts`
+
+Add one line as the first line inside the body of the test "frame budget: during 3 s of play, the 90th percentile rAF gap < 34 ms". Change nothing else in the file.
+
+```ts
+  test.skip(!!process.env.CI, "the CI runner is not a target device, so the frame gate runs on a desktop only")
+```
+
+### Why these two changes
+
+The first CI run on pull request #15 (run 41683053106, `ubuntu-26.04`, 2 workers) failed. The 90th percentile frame gap was 366.7 ms, then 250 ms on the retry, against a limit of 34 ms. Two other tests failed once and passed on retry. "Play sets data-mode=playing and a packet moves" lost its packet box after 100 ms. In "every player control reachable by Tab with a visible focus ring", the caption did not change within 5 s of clicking Next step. The suite took 2.0 minutes there and 31 s locally.
+
+Locally the same frame gap is 16.7 ms with the GPU off, and 16.7 ms with Chrome's CPU throttling at 6x. So slow script work does not explain the runner's number. Opus measured both and could not find the cause. `docs/plan.md` already says the frame gate runs on a desktop only, so it skips in CI and still runs locally. One worker in CI stops two browsers from competing for the runner's CPU. That should make the two timing tests stable, but this is a guess until the next CI run.
+
 ## Commands that must pass
 
 1. `pnpm install`
 2. `pnpm build` exits 0. Its content run still shows 68 tests passing. The output lists exactly three JS files in `dist/assets`, named `index-*.js`, `vendor-*.js` and `ink-*.js`. It has no "Some chunks are larger than" line.
 3. `pnpm test` shows 186 tests passing in 14 files, the same as before.
 4. `pnpm e2e` shows 46 tests passing. That is the 45 from before plus this 1. Run it 3 times in a row. All 3 runs must pass. If a run fails only on `net::ERR_TIMED_OUT` for a font, report it and run once more. Do not change any test to hide it.
-5. `pnpm dlx js-yaml .github/workflows/deploy.yml` exits 0. It only checks that the YAML parses. Opus checks the workflow itself on the pull request's CI run.
+5. `CI=1 pnpm exec playwright test e2e/scene-play.spec.ts` shows the frame budget test as skipped and every other test in that file passing, using 1 worker.
+6. `pnpm dlx js-yaml .github/workflows/deploy.yml` exits 0. It only checks that the YAML parses. Opus checks the workflow itself on the pull request's CI run.
 
 ## Done means
 
-- All five commands pass.
-- `git status` shows only the 6 files in the Files table.
+- All six commands pass.
+- `git status` shows only the 7 files in the Files table.
 - `dist/index.html` has `href="./favicon.svg"` and only `./assets/` script and stylesheet paths.
 - Each of these planted bugs makes the named check fail. Check each one, then put the code back:
   - removing `base: "./"` fails the deploy test;
@@ -217,7 +233,7 @@ One test, named exactly "app works when served under /system-design/". It uses `
 
 ## Report
 
-List every file you changed. Paste the output of commands 2, 3, 4 (all three e2e runs) and 5. Paste the failing output of the seven planted bugs. Say whether you hit anything the spec did not cover, and what you did about it.
+List every file you changed. Paste the output of commands 2, 3, 4 (all three e2e runs), 5 and 6. Paste the failing output of the seven planted bugs. Say whether you hit anything the spec did not cover, and what you did about it.
 
 ## After Codex reports
 
