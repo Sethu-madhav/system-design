@@ -60,3 +60,5 @@ ts	phase	decision	why	evidence	result
 2026-11-03T03:19:29Z	step11	fixed the step 11 spec so Show me expects stepping mode	a goto puts the player in stepping mode, not playing	commit df67bd1, src/scene/player.ts:61	spec matches the code
 2026-11-03T03:19:29Z	step11	merged the load-balancer quiz	verification passed with no findings, so no fix round	PR #11, /tmp/r11-*.png	build 68, unit 157 in 12 files, e2e 32 in 3 runs, 5 of 5 planted bugs caught
 2026-11-03T03:19:29Z	step11	left the stray period after prose highlights on phone for a later step	it is in ProseView, which step 11 did not touch	/tmp/r11-phone.png, commit 45c4302	open
+2026-11-03T03:43:37Z	step12	sent three review findings back to Codex and fixed the spec to match	statusOf read Object.prototype for slugs like toString, the sidebar called status four times in nested ternaries, and the next-lesson card had no heading	commit 460ea89	fixed by Codex, re-verified
+2026-11-03T03:43:37Z	step12	merged progress across reloads	verification passed after the fix round	PR #12, /tmp/r12-*.png	build 68, unit 173 in 13 files, e2e 37 in 3 runs, 12 of 12 planted bugs caught
