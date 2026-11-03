@@ -1,5 +1,6 @@
 import type { ReactNode } from "react"
 import { href, useRoute } from "@/app/routes"
+import { SearchPalette } from "@/app/SearchPalette"
 import { curriculum } from "@/content"
 import { Paper } from "@/components/ui/paper"
 import { Icon } from "@/components/ui/icon"
@@ -28,10 +29,11 @@ export function Shell({ children }: { children: ReactNode }) {
 
   return (
     <SidebarProvider className="block">
-      <header className="mx-auto flex max-w-6xl items-center px-4 py-6 md:px-8">
+      <header className="mx-auto flex max-w-6xl items-center justify-between px-4 py-6 md:px-8">
         <a href={href({ name: "home" })} className="font-script text-2xl font-bold text-ink">
           System design
         </a>
+        <SearchPalette />
       </header>
       <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 pb-12 md:grid md:grid-cols-[14rem_1fr] md:px-8">
         <aside data-testid="sidebar" aria-label="Lessons" className="hidden md:block">
