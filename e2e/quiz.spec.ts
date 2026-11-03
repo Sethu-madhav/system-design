@@ -1,27 +1,7 @@
 import { expect, gotoReady, test } from "./fixtures"
+import { solveOrder } from "./helpers"
 
 const path = "/#/learn/load-balancer"
-
-async function solveOrder(page: import("@playwright/test").Page) {
-  let values: number[] = []
-  for (let target = 0; target < 4; target += 1) {
-    values = await page.locator('[data-testid="quiz-order"] li').evaluateAll((rows) =>
-      rows.map((row) => Number(row.getAttribute("data-item"))),
-    )
-    let position = values.indexOf(target)
-
-    while (position > target) {
-      const row = page.locator(`[data-testid="quiz-order"] li[data-item="${target}"]`)
-      const upLabel = await row.getByRole("button").first().getAttribute("aria-label")
-      await row.getByRole("button", { name: upLabel ?? "" }).click()
-      values = await page.locator('[data-testid="quiz-order"] li').evaluateAll((rows) =>
-        rows.map((item) => Number(item.getAttribute("data-item"))),
-      )
-      position = values.indexOf(target)
-    }
-  }
-  expect(values).toEqual([0, 1, 2, 3])
-}
 
 test("answering all correctly shows 4/4 and passed", async ({ page }) => {
   await gotoReady(page, path)

@@ -8,6 +8,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { H2 } from "@/components/ui/typography"
 import { grade, shuffledOrder, type Answer, type Question, type Quiz, type QuizResult } from "@/content"
 import { useSceneCue } from "@/scene"
+import { useProgress } from "@/progress"
 
 type QuizState =
   | { readonly phase: "answering"; readonly index: number; readonly answers: readonly (Answer | null)[] }
@@ -160,6 +161,7 @@ function ResultCard({ quiz, result }: { quiz: Quiz; result: QuizResult }) {
 
 export function QuizView({ slug, quiz }: { slug: string; quiz: Quiz }) {
   const [state, setState] = useState<QuizState>(() => firstState(slug, quiz))
+  const { record } = useProgress()
 
   const updateAnswer = (index: number, answer: Answer | null) => {
     setState((current) => current.phase === "answering"
@@ -206,7 +208,9 @@ export function QuizView({ slug, quiz }: { slug: string; quiz: Quiz }) {
             disabled={!hasAnswer}
             onClick={() => {
               if (lastQuestion) {
-                setState({ phase: "result", answers: state.answers, result: grade(quiz, state.answers) })
+                const result = grade(quiz, state.answers)
+                record({ kind: "quiz", slug, correct: result.correct, total: result.total, at: Date.now() })
+                setState({ phase: "result", answers: state.answers, result })
               } else {
                 setState({ ...state, index: state.index + 1 })
               }

@@ -78,10 +78,14 @@ function useClock(running: boolean, dispatch: React.Dispatch<PlayerEvent>) {
   }, [running, dispatch])
 }
 
-export function SceneProvider({ timeline, step, children }: { timeline: Timeline; step?: string; children: React.ReactNode }) {
+export function SceneProvider({ timeline, step, onEnd, children }: { timeline: Timeline; step?: string; onEnd?: () => void; children: React.ReactNode }) {
   const motion = useMotion()
   const [state, dispatch] = React.useReducer((current: PlayerState, event: PlayerEvent) => reducePlayer(timeline, current, event), initialPlayer)
   useClock(state.mode !== "paused", dispatch)
+  const atEnd = state.t === timeline.duration
+  React.useEffect(() => {
+    if (atEnd) onEnd?.()
+  }, [atEnd, onEnd])
   const frame = React.useMemo(() => frameAt(timeline, state.t, motion), [timeline, state.t, motion])
   const stage = React.useRef<HTMLElement | null>(null)
 
