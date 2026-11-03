@@ -125,7 +125,7 @@ test("defineLesson throws with every quiz problem", () => {
 test("the real curriculum holds the load-balancer lesson", () => {
   const lesson = curriculum.bySlug.get("load-balancer")
 
-  expect(curriculum.tracks.map((track) => track.id)).toEqual(["edge"])
+  expect(curriculum.tracks.map((track) => track.id)).toEqual(["foundations", "edge"])
   expect(lesson?.order).toBe(2)
   expect(lesson?.minutes).toBe(9)
   expect(lesson?.headings.map((heading) => heading.id)).toEqual([
@@ -148,6 +148,35 @@ test("the real curriculum holds the load-balancer lesson", () => {
     "https://nginx.org/en/docs/http/load_balancing.html",
     "https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/outlier",
     "https://www.eecs.harvard.edu/~michaelm/postscripts/mythesis.pdf",
+  ])
+})
+
+test("the real curriculum holds the what-system-design-is lesson", () => {
+  const lesson = curriculum.bySlug.get("what-system-design-is")
+
+  expect(lesson?.track).toBe("foundations")
+  expect(lesson?.order).toBe(1)
+  expect(lesson?.minutes).toBe(8)
+  expect(lesson?.headings.map((heading) => heading.id)).toEqual([
+    "a-one-line-idea-is-not-a-design",
+    "the-smallest-real-system",
+    "what-the-product-does",
+    "how-well-it-must-do-it",
+    "ask-before-you-draw",
+    "a-method-in-six-steps",
+    "when-one-part-fails",
+    "no-design-is-best-in-general",
+    "in-a-design-review",
+  ])
+  expect(lesson?.timeline.steps.map((step) => step.id)).toEqual([
+    "request", "query", "answer", "users", "speed", "data", "dies", "bottleneck",
+  ])
+  expect(lesson?.quiz).toHaveLength(8)
+  expect(lesson?.sources.map((source) => source.url)).toEqual([
+    "https://github.com/donnemartin/system-design-primer#how-to-approach-a-system-design-interview-question",
+    "https://sre.google/sre-book/service-level-objectives/",
+    "https://docs.aws.amazon.com/wellarchitected/latest/framework/welcome.html",
+    "https://dataintensive.net/",
   ])
 })
 
