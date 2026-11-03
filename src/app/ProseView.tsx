@@ -2,17 +2,23 @@ import { Blockquote, H2, H3, InlineCode, List, P } from "@/components/ui/typogra
 import { Highlight } from "@/components/ui/highlight"
 import { useSceneCue } from "@/scene"
 import type { Block, Inline, Prose } from "@/content"
+import type { KeyboardEvent, ReactNode } from "react"
 
 function Cue({ step, text }: { step: string; text: string }) {
   const { active, play } = useSceneCue(step)
+  const onKeyDown = (event: KeyboardEvent<HTMLSpanElement>) => {
+    if (event.key !== "Enter" && event.key !== " ") return
+    event.preventDefault()
+    play()
+  }
   return (
-    <button type="button" data-cue={step} data-active={active ? "" : undefined} onClick={play} className="cursor-pointer text-left [font:inherit]">
+    <span role="button" tabIndex={0} data-cue={step} data-active={active ? "" : undefined} onClick={play} onKeyDown={onKeyDown} className="cursor-pointer rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ink">
       <Highlight seed={step}>{text}</Highlight>
-    </button>
+    </span>
   )
 }
 
-function renderInline(node: Inline, index: number) {
+function renderInline(node: Inline, index: number): ReactNode {
   switch (node.t) {
     case "text":
       return node.v
