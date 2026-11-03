@@ -189,8 +189,9 @@ Use `test`, `expect` and `gotoReady` from `./fixtures`. Import `AxeBuilder` from
    - The `scene` box has `x >= 0` and `x + width <= 390`.
    - `page.getByRole("region", { name: "Diagram, scrolls sideways" })` is visible.
    - Run this check in `page.evaluate`. For every `[data-cue]` element whose `nextSibling` is a text node starting with one of `.,;:!?)`, make a `Range` over that first character. Its `getBoundingClientRect()` must have `top >= last.top - 1` and `bottom <= last.bottom + 1`, where `last` is the cue's last `getClientRects()` entry. Return the steps that fail and the number checked. Expect no failures and at least 6 checked.
-   - Click `menu-open`. `sidebar-sheet` is visible. Click its link named `Load balancer`. `sidebar-sheet` is hidden and the URL ends with `#/learn/load-balancer`.
+   - Click `menu-open`. `sidebar-sheet` is visible. Click `page.getByTestId("sidebar-sheet").getByRole("link", { name: "Load balancer" })`, scoped to the sheet. `sidebar-sheet` is hidden and the URL ends with `#/learn/load-balancer`.
 3. `TOC link scrolls to the section`. Open the lesson at the default size.
+   - `menu-open` is hidden, because the sheet is for narrow screens only.
    - In `breadcrumb`, the link `Home` has `href="#/"`. The text `Edge and traffic` is present. The element with `aria-current="page"` has the text `Load balancer`.
    - `toc` is visible. Its links' texts are exactly `["What it does", "How it picks a server", "Horizontal scaling"]`.
    - Click the `How it picks a server` link. The URL ends with `#/learn/load-balancer/how-it-picks-a-server`. `page.locator("#how-it-picks-a-server")` is in the viewport. `window.scrollY` is greater than 0. The `toc` box has `y >= 0` and `y < 720`, which only holds if it is sticky.
@@ -224,9 +225,10 @@ Use `test`, `expect` and `gotoReady` from `./fixtures`. Import `AxeBuilder` from
   - removing `whitespace-normal` from the `Cue` button fails e2e test 2;
   - building the contents link with `href({ name: "lesson", slug: lesson.slug })` fails e2e test 3;
   - removing `lg:sticky` from `toc` fails e2e test 3;
-  - replacing `<BreadcrumbPage>` with plain text fails e2e test 3.
+  - replacing `<BreadcrumbPage>` with plain text fails e2e test 3;
+  - removing `md:hidden` from the `menu-open` button fails e2e test 3.
 - No comments, `any`, `as` casts or `!` assertions in the files you wrote.
 
 ## Report
 
-List every file you changed. Paste the output of commands 2, 3 and 4 (all three e2e runs). Paste the failing output of the thirteen planted bugs. Say whether you hit anything the spec did not cover, and what you did about it.
+List every file you changed. Paste the output of commands 2, 3 and 4 (all three e2e runs). Paste the failing output of the fourteen planted bugs. Say whether you hit anything the spec did not cover, and what you did about it.
