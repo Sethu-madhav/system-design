@@ -31,7 +31,7 @@ The design said "health check" would list the load-balancer `fail` step first. I
 - Run `pnpm install` first.
 - Do not edit anything under `src/content`, `src/scene`, `src/progress`, `src/lib/ink` or `vendor`. The add command below changes `package.json` and `pnpm-lock.yaml` and writes new files under `src/lib/ink`. Commit those as they come and edit none of them.
 - Do not add code comments. Do not use `any`, `as` casts or non-null assertions (`!`) in the files you write.
-- From `src/app`, import from `@/content` and `@/search` only through those index paths. `src/search/search.ts` imports lesson code only as `import type { Lesson } from "@/content"`. `src/boundaries.test.ts` fails otherwise.
+- From `src/app`, import from `@/content` and `@/search` only through those index paths. `src/search/search.ts` imports lesson code only as `import type { Block, Inline, Lesson } from "@/content"`. `src/boundaries.test.ts` fails otherwise.
 - Select elements in Playwright by role, `data-testid` or `data-*` attributes. Never by CSS class.
 
 ## Add the components
@@ -86,7 +86,7 @@ You write or change exactly these 6 files, plus the 12 from the add command abov
 ### `src/search/search.ts` (new)
 
 ```ts
-import type { Lesson } from "@/content"
+import type { Block, Inline, Lesson } from "@/content"
 
 interface DocBase {
   readonly slug: string
@@ -149,16 +149,16 @@ The fields and their weights:
 
 `lessonTitle` is always `lesson.title`, and `slug` is `lesson.slug`. A step's title is not indexed. That makes the step weight the design's "caption 2", the section title weight its "heading 3", and the section text its "body 1".
 
-The plain text of inlines joins: `text` and `code` give `v`, `cue` gives `text`, and `strong`, `em` and `link` give the plain text of `c`. Blocks join with one space. `p` and `callout` give their inlines, `ul` and `ol` give each item joined by one space, and `code` gives `v`. Write this as a small local function in `search.ts`. `inlineText` in `src/content/prose.ts` is not exported, and you may not edit `src/content`.
+The plain text of inlines joins: `text` and `code` give `v`, `cue` gives `text`, and `strong`, `em` and `link` give the plain text of `c`. Blocks join with one space. `p` and `callout` give their inlines, `ul` and `ol` give each item joined by one space, and `code` gives `v`. Write these as two small local functions in `search.ts` over the `Block` and `Inline` types from `@/content`, with a `switch` on `t`. Do not copy those types into `search.ts`. `inlineText` in `src/content/prose.ts` is not exported, and you may not edit `src/content`.
 
-There is one posting per (token, document) pair. Its `weight` is the largest weight of any field of that document that contains the token.
+There is one posting per (token, document) pair. Its `weight` is the largest weight of any field of that document that contains the token. Build each document's token weights in a `Map<string, number>` first, then push one posting per entry. Do not search a postings array to update it.
 
 **`search`.**
 
 1. Tokenize the query and remove duplicate tokens, keeping first positions. If there are no tokens, return `[]`.
-2. For each query token, the candidate keys are the token itself if it is a key in `postings`. For the last token only, they also include every other key that starts with it.
-3. A document's score for one token is the largest `posting.weight × (key === token ? 2 : 1)` over the candidate keys that have a posting for that document. A document with no score for some token is dropped.
-4. A document's score is the sum of its token scores.
+2. For each query token, the candidate keys are the token itself if it is a key in `postings`. For the last token only, they also include every other key that starts with it. Work out each token's candidate keys once per query, not once per document.
+3. A document's score for one token is the largest `posting.weight × (key === token ? 2 : 1)` over the candidate keys that have a posting for that document. Get it by walking the postings of the candidate keys into a `Map<number, number>` from document position to score. Do not loop over every document. A document with no score for some token is dropped.
+4. A document's score is the sum of its token scores. The work per query grows with the number of keys and matching postings, not with documents times keys.
 5. Sort by score, highest first. Break ties by document position in `docs`, lowest first. Return the first `limit` hits. `limit` defaults to `DEFAULT_LIMIT`.
 
 **The snippet** comes from `doc.text` only:
@@ -238,7 +238,7 @@ It renders a trigger button and the dialog.
 
 **The shortcuts.** One `keydown` listener on `window`, added in a `useEffect` with `[]` dependencies and removed in its cleanup:
 
-- if `event.metaKey || event.ctrlKey` and `event.key.toLowerCase() === "k"`, call `preventDefault` and toggle `open`;
+- if `event.metaKey || event.ctrlKey` and `event.key.toLowerCase() === "k"`, call `preventDefault`, toggle `open` and set `query` to `""`. Closing by Cmd-K must clear the query just like Escape does;
 - if `event.key === "/"` with no meta, ctrl or alt key, and the event target is not editable, call `preventDefault` and set `open` to true.
 
 A target is editable when it is an `HTMLElement` that `isContentEditable`, or that has `closest("input, textarea, select")`. Without this check, typing `/` in the palette's own input would be swallowed.
@@ -269,6 +269,7 @@ A target is editable when it is an `HTMLElement` that `isContentEditable`, or th
 - Each hit is `<CommandItem key={t} value={t} data-testid="search-result" data-kind={hit.doc.kind} data-href={t} onSelect={() => go(t)}>`, where `t = target(hit.doc)`. Inside, put a `div` with `className="min-w-0"` that holds two lines:
   - first line, `<span className="font-bold">{hit.doc.title}</span>`, and for a section or step also ` · {hit.doc.lessonTitle}` in `text-pencil-text`;
   - second line, a `<span className="block truncate text-sm text-pencil-text">` with `before`, then `<strong className="text-ink">{match}</strong>`, then `after`.
+  - The wrapper `div` must be able to shrink to the item's width, for example `min-w-0 flex-1`. A long snippet is cut with an ellipsis inside the dialog. It never widens the item, the list or the dialog.
 - `go(t)` sets `window.location.hash = t`, then calls `onOpenChange(false)`.
 
 ### `src/app/Shell.tsx`
@@ -279,8 +280,8 @@ Give the header `justify-between` and render `<SearchPalette />` after the home 
 
 Use `test`, `expect` and `gotoReady` from `./fixtures`. Every test starts with `gotoReady(page, "/#/")`. The palette dialog is `page.getByRole("dialog")`.
 
-1. `Cmd-K opens the palette`. Press `Meta+k`. The dialog is visible and `search-input` is focused. `search-hint` is visible. Press `Escape`, and the dialog is hidden. Press `/`. The dialog is visible again. Type `l4/l7` into the input with `pressSequentially`. The input's value is `l4/l7`.
-2. `typing 'health check' lists the Load balancer lesson then the fail step; Down and Enter land on #/learn/load-balancer/step/fail`. Press `Meta+k` and type `health check`. There are exactly 2 `search-result` items. The first has `data-kind="lesson"` and contains `Load balancer`. The second has `data-kind="step"` and `data-href="#/learn/load-balancer/step/fail"`. Press `ArrowDown`, then `Enter`. The URL ends with `#/learn/load-balancer/step/fail`, the dialog is hidden, and `scene` has `data-step-id="fail"`.
+1. `Cmd-K opens the palette`. Press `Meta+k`. The dialog is visible and `search-input` is focused. `search-hint` is visible. Press `Escape`, and the dialog is hidden. Press `/`. The dialog is visible again. Type `l4/l7` into the input with `pressSequentially`. The input's value is `l4/l7`. Press `Meta+k`, and the dialog is hidden. Press `Meta+k` again. The dialog is visible and the input's value is `""`.
+2. `typing 'health check' lists the Load balancer lesson then the fail step; Down and Enter land on #/learn/load-balancer/step/fail`. Press `Meta+k` and type `health check`. There are exactly 2 `search-result` items. The first has `data-kind="lesson"` and contains `Load balancer`. The second has `data-kind="step"` and `data-href="#/learn/load-balancer/step/fail"`. The first result's bounding box ends at or before the dialog's right edge, because the lesson summary snippet is longer than the dialog is wide. Press `ArrowDown`, then `Enter`. The URL ends with `#/learn/load-balancer/step/fail`, the dialog is hidden, and `scene` has `data-step-id="fail"`.
 3. `typing 'layer 7' then Enter scrolls to the heading`. Press `Meta+k` and type `layer 7`. There is exactly 1 `search-result` item, with `data-kind="section"` and `data-href="#/learn/load-balancer/how-it-picks-a-server"`. Press `Enter`. The URL ends with `#/learn/load-balancer/how-it-picks-a-server`. `page.locator("#how-it-picks-a-server")` is in the viewport, and `window.scrollY` is greater than 0.
 4. `Escape closes and returns focus`. Click `search-open`. The dialog is visible. Press `Escape`. The dialog is hidden and `search-open` is focused.
 
@@ -303,9 +304,11 @@ Use `test`, `expect` and `gotoReady` from `./fixtures`. Every test starts with `
   - taking `before` from `i - 30` instead of `i - 60` fails unit test `snippet centers on the first match`;
   - removing `shouldFilter: false` fails e2e test 2;
   - making `target` return the lesson href for a section fails e2e test 3;
-  - dropping the editable-target check from the `/` shortcut fails e2e test 1.
+  - dropping the editable-target check from the `/` shortcut fails e2e test 1;
+  - not clearing `query` in the Cmd-K branch fails e2e test 1;
+  - removing `flex-1` and `min-w-0` from the result wrapper fails e2e test 2.
 - No comments, `any`, `as` casts or `!` assertions in the files you wrote.
 
 ## Report
 
-List every file you changed. Paste the output of commands 2, 3 and 4 (all three e2e runs). Paste the failing output of the eight planted bugs. Say whether you hit anything the spec did not cover, and what you did about it.
+List every file you changed. Paste the output of commands 2, 3 and 4 (all three e2e runs). Paste the failing output of the ten planted bugs. Say whether you hit anything the spec did not cover, and what you did about it.
