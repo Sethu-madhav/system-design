@@ -100,7 +100,7 @@ const lb = compile(
 1. `cellPx is bucketed to 8 and clamped`. Widths 500, 100 and 5000 give 96, 64 and 128.
 2. `same width bucket gives identical layout`. `layoutScene(lb, 481)` deep-equals `layoutScene(lb, 519)`.
 3. `node rects are integers`. For widths 300, 517, 733 and 1200, every node's `x, y, w, h` is an integer, `w % 4` is 0 and `h % 2` is 0.
-4. `edge endpoints clipped outside both node rects`. At width 517, for every edge, neither end lies inside or on the rect of node `a` or node `b`.
+4. `edge endpoints clipped outside both node rects`. At width 517, for every edge, neither end lies inside or on the rect of node `a` or node `b`. Use `>=` and `<=` in the inside check, so an end exactly on the border fails.
 5. `pointOn u=0 at from, u=1 at to, reversed when from is b`. Use edge `"lb~you"` at width 517.
 
 ### `src/scene/ink.ts` (new)
@@ -178,6 +178,7 @@ Use `{ seed, tier: "lo", density: "comfortable", dir: "ltr", knobs: DEFAULT_KNOB
 - `useReducer` with `(current, event) => reducePlayer(timeline, current, event)` and `initialPlayer`.
 - `frame` is `frameAt(timeline, state.t, "reduced")`. Reduced motion has no packets, and it marks every edge that carries a send in the current step as active. That is the static view this step wants.
 - No clock and no `requestAnimationFrame`. Step 10 adds them.
+- Wrap the context value in `React.useMemo` keyed on `[timeline, state, frame]`, and compute `frame` in a `useMemo` keyed on `[timeline, state.t]`. Every cue reads this context, so a new object on each render re-renders every cue.
 
 **`useSceneCue(stepId)`** returns `{ active: frame.stepId === stepId }`.
 
@@ -198,12 +199,13 @@ figure data-testid="scene" data-step-id={frame.stepId}
     Button "Next"  aria-label="Next step"      disabled on the last step
 ```
 
-- **Measuring.** Call `useInkBox()` from `@/lib/ink` and put its `ref` on the measure wrapper. Render the stage only when `box` is set, with `layoutScene(timeline, box.w)`.
-- **The wrapper reserves its height in CSS before anything is measured.** Use `className="w-full overflow-x-auto overflow-y-hidden"` and `style={{ boxSizing: "content-box", paddingBottom: 24, aspectRatio: \`${cols} / ${rows}\`, minHeight: rows * MIN_CELL, maxHeight: rows * MAX_CELL }}`, with `cols` and `rows` from `gridOf(timeline)`. This does two things. The ink box ignores a host with zero height, so an empty wrapper would never measure. And the page does not jump when the stage appears, so step 8's deep-link scroll test keeps passing. The 24px bottom padding is room for the bottom row's labels. Below `cols * 64` pixels wide the stage scrolls sideways.
+- **Measuring.** Call `useInkBox()` from `@/lib/ink` and put its `ref` on the measure wrapper. Render the stage only when `box` is set, with `layoutScene(timeline, box.w - 2)`. `useInkBox` rounds the width to the nearest multiple of 4, so the real width can be up to 2px less than `box.w`. Without the `- 2`, a 727px wrapper lays out a 728px stage and shows a 1px scrollbar.
+- **The wrapper reserves its height in CSS before anything is measured.** Use `className="w-full overflow-x-auto overflow-y-hidden"` and `style={{ boxSizing: "content-box", paddingTop: 24, paddingBottom: 24, aspectRatio: \`${cols} / ${rows}\`, minHeight: rows * MIN_CELL, maxHeight: rows * MAX_CELL }}`, with `cols` and `rows` from `gridOf(timeline)`. This does two things. The ink box ignores a host with zero height, so an empty wrapper would never measure. And the page does not jump when the stage appears, so step 8's deep-link scroll test keeps passing. The 24px top padding is room for a note on a top-row node. The 24px bottom padding is room for the bottom row's labels. Below `cols * 64` pixels wide the stage scrolls sideways.
 - **Edge hosts.** `data-scene-edge={edge.id}`, `data-visible={view.visible}`, `data-active` set to `""` when `view.active` and left off otherwise. Absolute position at `g.host`. Inside, `<InkLayer recipe={sceneEdgeRecipe} seed={edge.id} params={...} />` with the ends made relative to the host (`g.x1 - g.host.x` and so on) and `heads: edge.heads`. `InkLayer` is the React component exported from `@/lib/ink`.
-- **Node hosts.** `data-scene-node={id}`, `data-kind={def.kind}`, `data-visible={view.visible}`, `data-focus` and `data-down` as `""` or left off (`data-down` when `view.status === "down"`). Absolute position at the node rect. Inside, `<InkLayer recipe={sceneNodeRecipe} seed={id} params={{ kind: def.kind }} />`.
-  - The label is a `span` under the node (`absolute top-full left-1/2 -translate-x-1/2 mt-1 w-max text-center font-hand text-sm leading-tight`).
-  - When `view.note` is set, add a `span data-testid="scene-note"` above the node in `text-red`.
+- **Node hosts.** `data-scene-node={id}`, `data-kind={def.kind}`, `data-visible={view.visible}`, `aria-hidden={!view.visible}`, `data-focus` and `data-down` as `""` or left off (`data-down` when `view.status === "down"`). Absolute position at the node rect. Inside, `<InkLayer recipe={sceneNodeRecipe} seed={id} params={{ kind: def.kind }} />`.
+  - The label is a `span` under the node (`absolute top-full left-1/2 -translate-x-1/2 mt-1 w-max max-w-[calc(100%+1.5rem)] text-center font-hand text-sm leading-tight`). The `max-w` makes a long label like "Load balancer" wrap instead of running into the next node's label at small cell sizes.
+  - When `view.note` is set, add a `span data-testid="scene-note"` above the node (`absolute bottom-full left-1/2 -translate-x-1/2 mb-1 w-max font-hand text-sm text-red`). The `mb-1` keeps the note off the node outline.
+- Edge hosts also get `aria-hidden={!view.visible}`. Hidden nodes and edges are only transparent, so without it a screen reader reads "Server C" at step 1.
 - Import `Button` from `@/components/ui/button` with `variant="outline" size="sm"`.
 - Import `./scene.css` at the top of the file.
 
@@ -247,7 +249,7 @@ Add `export { SceneProvider, ScenePlayer, useSceneCue } from "./ScenePlayer"`.
 ### `src/app/LessonPage.tsx`
 
 - Import `SceneProvider` and `ScenePlayer` from `@/scene`.
-- Wrap the returned lesson in `<SceneProvider key={lesson.slug} timeline={lesson.timeline}>`. The key resets the player when the lesson changes.
+- Wrap the returned lesson in `<SceneProvider key={lesson.slug} timeline={lesson.timeline}>`. The key resets the player when the lesson changes. Re-indent everything inside it by one level.
 - Remove the two-column grid and the `diagram-slot` div. The order becomes: header, `<ScenePlayer />`, then one `div className="min-w-0 space-y-8"` holding the prose, attribution, further reading and the prev/next nav.
 - The not-found branch and the scroll effect stay as they are.
 
