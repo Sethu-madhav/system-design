@@ -17,6 +17,62 @@ export type Question<S extends string = string> =
 
 export type Quiz<S extends string = string> = readonly Question<S>[]
 
+export type Answer = number | readonly number[]
+
+export interface QuestionResult {
+  readonly correct: boolean
+  readonly picked: Answer | null
+}
+
+export interface QuizResult {
+  readonly perQuestion: readonly QuestionResult[]
+  readonly correct: number
+  readonly total: number
+  readonly needed: number
+  readonly passed: boolean
+}
+
+export const PASS_RATIO = 0.7
+
+export function grade(quiz: Quiz, answers: readonly (Answer | null)[]): QuizResult {
+  const perQuestion = quiz.map((question, index): QuestionResult => {
+    const answer = answers[index] ?? null
+    let correct = false
+
+    if (question.kind === "choice") {
+      correct = typeof answer === "number" && question.options[answer]?.correct === true
+    } else if (question.kind === "multi") {
+      if (Array.isArray(answer)) {
+        const picked = new Set(answer)
+        const expected = new Set(
+          question.options.flatMap((option, optionIndex) => option.correct === true ? [optionIndex] : []),
+        )
+        correct = picked.size === expected.size && [...expected].every((index) => picked.has(index))
+      }
+    } else if (Array.isArray(answer)) {
+      correct = answer.length === question.items.length &&
+        answer.every((itemIndex, index) => itemIndex === index)
+    }
+
+    return { correct, picked: answer }
+  })
+  const correct = perQuestion.filter((result) => result.correct).length
+  const total = quiz.length
+  let needed = 0
+
+  while (needed < total && needed / total < PASS_RATIO) {
+    needed += 1
+  }
+
+  return {
+    perQuestion,
+    correct,
+    total,
+    needed,
+    passed: total > 0 && correct >= needed,
+  }
+}
+
 export function checkQuiz(quiz: Quiz): readonly string[] {
   const problems: string[] = []
   if (quiz.length < 3) problems.push("quiz needs at least 3 questions")

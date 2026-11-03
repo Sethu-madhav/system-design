@@ -4,6 +4,7 @@ import { curriculum, neighbors } from "@/content"
 import { href, type LessonRoute } from "@/app/routes"
 import { NotFoundPage } from "@/app/NotFoundPage"
 import { ProseView } from "@/app/ProseView"
+import { QuizView } from "@/app/QuizView"
 import { SceneProvider, ScenePlayer } from "@/scene"
 
 export function LessonPage({ route }: { route: LessonRoute }) {
@@ -34,6 +35,7 @@ export function LessonPage({ route }: { route: LessonRoute }) {
         <ScenePlayer />
         <div className="min-w-0 space-y-8">
           <ProseView prose={lesson.body} />
+          <QuizView slug={lesson.slug} quiz={lesson.quiz} />
           <section data-testid="attribution" className="space-y-2">
             <H2>Attribution</H2>
             {lesson.attributions.map((item) => (
