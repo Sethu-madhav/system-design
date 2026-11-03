@@ -1,6 +1,12 @@
 import { Blockquote, H2, H3, InlineCode, List, P } from "@/components/ui/typography"
 import { Highlight } from "@/components/ui/highlight"
+import { useSceneCue } from "@/scene"
 import type { Block, Inline, Prose } from "@/content"
+
+function Cue({ step, text }: { step: string; text: string }) {
+  const { active } = useSceneCue(step)
+  return <Highlight data-cue={step} data-active={active ? "" : undefined} seed={step}>{text}</Highlight>
+}
 
 function renderInline(node: Inline, index: number) {
   switch (node.t) {
@@ -15,7 +21,7 @@ function renderInline(node: Inline, index: number) {
     case "link":
       return <a key={index} href={node.href}>{node.c.map(renderInline)}</a>
     case "cue":
-      return <Highlight key={index} data-cue={node.step} seed={node.step}>{node.text}</Highlight>
+      return <Cue key={index} step={node.step} text={node.text} />
   }
 }
 
