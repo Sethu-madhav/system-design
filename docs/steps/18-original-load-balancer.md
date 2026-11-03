@@ -115,7 +115,9 @@ Run each one 3 times.
 - `pnpm test`. 183 tests in 14 files.
 - `pnpm e2e`. 50 tests.
 
-`grep -rn "attribution\|AdaptableRepo\|CHANGE_NOTICE\|licenseUrl\|furtherReading" src e2e` prints nothing.
+`grep -rn "AdaptableRepo\|CHANGE_NOTICE\|licenseUrl\|furtherReading\|attribution(" src e2e` prints nothing. The word "attribution" still appears in `e2e/lesson-text.spec.ts`, which checks that the section is gone.
+
+The two `adapted` cases in `license.typetest.ts` are valid `SourceRef` values apart from `use`. So `use` is their only type error, and adding `"adapted"` back to `SourceRef` makes `tsc -b` fail on an unused `@ts-expect-error`.
 
 ## Originality
 
@@ -1198,12 +1200,12 @@ index d38c4ce..ec973bc 100644
 -// @ts-expect-error CC BY-NC-ND repo is link only
 -export const bad1: SourceRef = { use: "adapted", repo: "ByteByteGoHq/system-design-101", section: "x", anchor: "x" }
 +// @ts-expect-error no repo may be adapted, the primer included
-+export const adaptPrimer: SourceRef = { use: "adapted", repo: "donnemartin/system-design-primer", section: "x", anchor: "x" }
++export const adaptPrimer: SourceRef = { use: "adapted", repo: "donnemartin/system-design-primer", title: "x", url: "https://example.com" }
  
 -// @ts-expect-error MIT repo is link, not adapt
 -export const bad2: SourceRef = { use: "adapted", repo: "binhnguyennus/awesome-scalability", section: "x", anchor: "x" }
 +// @ts-expect-error CC BY-NC-ND repo is link only
-+export const adaptLinkOnly: SourceRef = { use: "adapted", repo: "ByteByteGoHq/system-design-101", section: "x", anchor: "x" }
++export const adaptLinkOnly: SourceRef = { use: "adapted", repo: "ByteByteGoHq/system-design-101", title: "x", url: "https://example.com" }
  
  // @ts-expect-error repo is not in the registry
 -export const bad3: SourceRef = { use: "adapted", repo: "someone/random", section: "x", anchor: "x" }
