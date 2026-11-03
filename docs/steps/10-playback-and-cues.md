@@ -252,7 +252,7 @@ Import `test`, `expect` and `gotoReady` from `./fixtures`. `scene` below means `
 6. `clicking the cue 'stops sending requests to unhealthy servers' sets data-step-id=fail`. Set the viewport to 1280 by 900, then open the lesson. Click `page.getByTestId("prose").locator('[data-cue="fail"]')`. The scene has `data-step-id="fail"` and `data-mode="stepping"`, and `await expect(scene).toBeInViewport({ ratio: 0.9 })` passes.
 7. `deep link #/learn/load-balancer/step/scale opens at scale`. Open `/#/learn/load-balancer/step/scale` directly. `data-step-id` is `scale`, `data-mode` is `paused`, and the step count is "Step 7 of 8".
 8. `with emulateMedia reducedMotion=reduce: data-motion=reduced, no packet elements during Play, and captions still advance`. Call `page.emulateMedia({ reducedMotion: "reduce" })` before opening the lesson. The scene has `data-motion="reduced"`. Click Play. In `page.evaluate`, on every animation frame for 3000 ms, read `document.querySelectorAll("[data-scene-packet]").length` and return the largest value. It is 0. Then, with a 6 s timeout, `data-step-id` becomes `pick`. Do not use `toHaveCount(0)` for the packet check. It retries for 5 s and passes the first moment no packet is on screen, which happens between flights even when packets do render, so it cannot catch the planted `"full"` bug.
-9. `frame budget: during 3 s of play, the longest rAF gap < 50 ms`. Open the lesson, click Play, and wait for `data-mode="playing"`. In `page.evaluate`, sample `requestAnimationFrame` timestamps for 3000 ms and return the largest gap between frames. It is under 50.
+9. `frame budget: during 3 s of play, the 90th percentile rAF gap < 34 ms`. Open the lesson, click Play, and wait for `data-mode="playing"`. In `page.evaluate`, sample `requestAnimationFrame` timestamps for 3000 ms, sort the gaps between frames, and return the gap at index `Math.floor(gaps.length * 0.9)`. It is under 34. Do not assert on the single longest gap. Playwright runs test files in parallel, so other browsers share the CPU and one 50 to 100 ms stall shows up in some runs no matter what the code does (measured: 2 of 5 full runs had a 50 ms worst gap, while a run of this test alone had at most one 33 ms stall per second). The regression this test exists for is every frame taking 50 ms, which a percentile catches.
 10. `ink is not regenerated during play`. Open the lesson. Wait until `[data-scene-node="sessions"] svg[data-ink]` is attached. Click Play and wait for `packet` to be visible. In `page.evaluate`, on each of 30 animation frames, record `${count}:${totalLength}`. Here `count` is the number of `[data-testid="stage"] svg[data-ink]` elements and `totalLength` is the sum of their `innerHTML.length`. All 30 records are equal.
 
 ## Commands that must pass
@@ -271,8 +271,9 @@ Import `test`, `expect` and `gotoReady` from `./fixtures`. `scene` below means `
   - removing `onClick={play}` from the cue button fails scene-play test 6;
   - making the deep-link effect dispatch `goto` instead of `seek` fails scene-play test 7;
   - removing the `useClock` call fails scene-play tests 1 and 4.
+  - removing `className="will-change-transform"` from the Slider fails scene-play test 9;
 - No comments, `any`, `as` casts or `!` assertions in the files you wrote.
 
 ## Report
 
-List every file you changed. Paste the output of commands 2, 3 and 4. Paste the failing output of the four planted bugs. Say whether you hit anything the spec did not cover, and what you did about it.
+List every file you changed. Paste the output of commands 2, 3 and 4. Paste the failing output of the five planted bugs. Say whether you hit anything the spec did not cover, and what you did about it.
