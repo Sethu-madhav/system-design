@@ -279,7 +279,7 @@ The quiz checks pull versus push, how to ship a changed file without waiting for
 
 Slug `load-balancer`. Builds on 1.3, 1.4 and 3.4.
 
-This lesson replaces the current short one in step 17. A load balancer spreads requests over a pool of servers and stops sending to the ones that fail. The lesson covers each of these topics:
+This lesson replaces the current short one in step 18. A load balancer spreads requests over a pool of servers and stops sending to the ones that fail. The lesson covers each of these topics:
 
 - Active health checks probe each server. Passive checks watch real responses.
 - The balancing rules are round robin, weighted round robin, least connections and least response time. Hashing sends a given user to the same server.
@@ -956,7 +956,7 @@ The quiz checks a quorum setting for a given need, and what the stand-in write p
 
 ## Code changes the curriculum needs
 
-The current `TRACKS` list in `src/content/curriculum.ts` has 10 tracks. The curriculum uses 12. Step 17 replaces the list with these ids and titles, in this order:
+The current `TRACKS` list in `src/content/curriculum.ts` has 10 tracks. The curriculum uses 12. Step 18 replaces the list with these ids and titles, in this order:
 
 | Id | Title |
 | :--- | :--- |
@@ -977,8 +977,8 @@ The current `TRACKS` list in `src/content/curriculum.ts` has 10 tracks. The curr
 
 ## Build order
 
-1. **Step 17.** The full original load balancer lesson (4.2), the removal of the adaptation and credit code, and the new `TRACKS` list ship in one PR. One PR keeps the live site from ever showing adapted text without credit.
-2. **Steps 18 and later.** One lesson per spec, in chapter order. The order starts at 1.1 and skips 4.2, which step 17 already built.
+1. **Step 18.** The full original load balancer lesson (4.2), the removal of the adaptation and credit code, and the new `TRACKS` list ship in one PR. One PR keeps the live site from ever showing adapted text without credit.
+2. **Steps 19 and later.** One lesson per spec, in chapter order. The order starts at 1.1 and skips 4.2, which step 18 already built.
 
 That is 69 lessons. A lesson that needs a new box kind or diagram feature gets its own engine step before it.
 
