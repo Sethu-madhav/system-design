@@ -3,6 +3,7 @@ import { H1, H2 } from "@/components/ui/typography"
 import { blockText, curriculum, neighbors } from "@/content"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
 import { href, type LessonRoute } from "@/app/routes"
+import { LINK_CLASS } from "@/app/link-class"
 import { NotFoundPage } from "@/app/NotFoundPage"
 import { ProseView } from "@/app/ProseView"
 import { QuizView } from "@/app/QuizView"
@@ -71,20 +72,20 @@ export function LessonPage({ route }: { route: LessonRoute }) {
             <H2>Attribution</H2>
             {lesson.attributions.map((item) => (
               <p key={item.sourceUrl} className="font-hand text-base">
-                <a href={item.sourceUrl}>{item.text}</a>{" "}
-                Licensed under <a href={item.licenseUrl}>{item.license}</a>. {item.changed}
+                <a href={item.sourceUrl} className={LINK_CLASS}>{item.text}</a>{" "}
+                Licensed under <a href={item.licenseUrl} className={LINK_CLASS}>{item.license}</a>. {item.changed}
               </p>
             ))}
           </section>
           <section data-testid="further-reading" className="space-y-2">
             <H2>Further reading</H2>
             <ul className="list-disc space-y-1 ps-6">
-              {lesson.furtherReading.map((item) => <li key={item.url}><a href={item.url}>{item.title}</a></li>)}
+              {lesson.furtherReading.map((item) => <li key={item.url}><a href={item.url} className={LINK_CLASS}>{item.title}</a></li>)}
             </ul>
           </section>
-          <nav aria-label="Lesson navigation" className="flex justify-between gap-4 font-hand text-lg">
-            {lessonNeighbors.prev ? <a href={href({ name: "lesson", slug: lessonNeighbors.prev.slug })}>← {lessonNeighbors.prev.title}</a> : <span />}
-            {lessonNeighbors.next ? <a href={href({ name: "lesson", slug: lessonNeighbors.next.slug })}>{lessonNeighbors.next.title} →</a> : null}
+          <nav data-testid="lesson-nav" aria-label="Lesson navigation" className="flex justify-between gap-4 font-hand text-lg">
+            {lessonNeighbors.prev ? <a href={href({ name: "lesson", slug: lessonNeighbors.prev.slug })} className={LINK_CLASS}>← {lessonNeighbors.prev.title}</a> : <span />}
+            {lessonNeighbors.next ? <a href={href({ name: "lesson", slug: lessonNeighbors.next.slug })} className={LINK_CLASS}>{lessonNeighbors.next.title} →</a> : null}
           </nav>
         </div>
       </div>

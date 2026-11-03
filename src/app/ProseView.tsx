@@ -1,5 +1,6 @@
 import { Blockquote, H2, H3, InlineCode, List, P } from "@/components/ui/typography"
 import { Highlight } from "@/components/ui/highlight"
+import { LINK_CLASS } from "@/app/link-class"
 import { useSceneCue } from "@/scene"
 import type { Block, Inline, Prose } from "@/content"
 import type { KeyboardEvent, ReactNode } from "react"
@@ -29,7 +30,7 @@ function renderInline(node: Inline, index: number): ReactNode {
     case "code":
       return <InlineCode key={index}>{node.v}</InlineCode>
     case "link":
-      return <a key={index} href={node.href}>{node.c.map(renderInline)}</a>
+      return <a key={index} href={node.href} className={LINK_CLASS}>{node.c.map(renderInline)}</a>
     case "cue":
       return <Cue key={index} step={node.step} text={node.text} />
   }

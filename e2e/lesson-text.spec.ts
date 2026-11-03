@@ -83,3 +83,20 @@ test("every text line on a lesson card sits just above a ruled line", async ({ p
     }
   }
 })
+
+test("text links are blue and underlined", async ({ page }) => {
+  const blue = "rgb(44, 79, 158)"
+  const pages: [string, string][] = [
+    ["/#/learn/load-balancer", '[data-testid="attribution"] a, [data-testid="further-reading"] a, [data-testid="lesson-nav"] a, [data-testid="prose"] a'],
+    ["/#/nowhere", '[data-testid="not-found"] a'],
+  ]
+  for (const [path, selector] of pages) {
+    await gotoReady(page, path)
+    const links = page.locator(selector)
+    expect(await links.count(), `${path} has text links`).toBeGreaterThanOrEqual(1)
+    for (const link of await links.all()) {
+      await expect(link).toHaveCSS("color", blue)
+      await expect(link).toHaveCSS("text-decoration-line", "underline")
+    }
+  }
+})
