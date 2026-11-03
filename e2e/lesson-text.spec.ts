@@ -50,3 +50,36 @@ test("sidebar link marks current lesson with aria-current", async ({ page }) => 
   await link.click()
   await expect(link).toHaveAttribute("aria-current", "page")
 })
+
+test("every text line on a lesson card sits just above a ruled line", async ({ page }) => {
+  for (const width of [1280, 390]) {
+    await page.setViewportSize({ width, height: 844 })
+    await gotoReady(page, "/#/")
+    const card = page.getByTestId("lesson-card").first().locator('[data-slot="index-card"]')
+    const gaps = await card.evaluate((el) => {
+      const rules = el.querySelector('[data-slot="paper-rules"]')
+      if (rules === null) return []
+      const [header, pitch] = getComputedStyle(rules).backgroundSize.split(",").map((layer) => Number.parseFloat(layer.trim().split(" ")[1] ?? ""))
+      if (header === undefined || pitch === undefined) return []
+      const top = rules.getBoundingClientRect().top
+      const found: number[] = []
+      for (const slot of ["index-card-title", "index-card-content", "index-card-footer"]) {
+        const node = el.querySelector(`[data-slot="${slot}"]`)
+        if (node === null) continue
+        const range = document.createRange()
+        range.selectNodeContents(node)
+        for (const rect of range.getClientRects()) {
+          const bottom = rect.bottom - top
+          const rule = bottom < header ? Number.NEGATIVE_INFINITY : header + Math.floor((bottom - header) / pitch) * pitch
+          found.push(bottom - rule)
+        }
+      }
+      return found
+    })
+    expect(gaps.length, `${width} px has text lines`).toBeGreaterThanOrEqual(5)
+    for (const gap of gaps) {
+      expect(gap, `${width} px line gap ${gap}`).toBeGreaterThanOrEqual(2)
+      expect(gap, `${width} px line gap ${gap}`).toBeLessThanOrEqual(9)
+    }
+  }
+})
