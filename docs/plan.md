@@ -45,7 +45,7 @@ After you approve, Opus commits the step as one commit on `main` and logs it in 
 | 12 | Progress | Check marks and a Continue card that survive a reload. |
 | 13 | Search palette | Cmd-K finds a lesson, a section or a diagram step. |
 | 14 | Navigation and accessibility | Breadcrumbs, contents list, phone layout, axe passes. |
-| 15 | Deploy | The site on GitHub Pages. This step needs your GitHub login and your go-ahead to push. |
+| 15 | Deploy | The site on GitHub Pages. Approving the spec is your go-ahead to turn on Pages and deploy. |
 
 Steps 3 to 7 change nothing in the browser. You check them by reading the test names and output that Opus pastes.
 
