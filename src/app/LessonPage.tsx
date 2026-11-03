@@ -25,7 +25,7 @@ export function LessonPage({ route }: { route: LessonRoute }) {
   const lessonNeighbors = neighbors(curriculum, lesson.slug)
 
   return (
-    <SceneProvider key={lesson.slug} timeline={lesson.timeline}>
+    <SceneProvider key={lesson.slug} timeline={lesson.timeline} step={route.step}>
       <div data-testid="lesson" data-slug={lesson.slug} className="space-y-8">
         <header className="space-y-3">
           <H1>{lesson.title}</H1>

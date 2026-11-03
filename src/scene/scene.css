@@ -3,6 +3,11 @@
   transition: opacity 200ms ease-out;
 }
 
+[data-motion="reduced"] [data-scene-node],
+[data-motion="reduced"] [data-scene-edge] {
+  transition: none;
+}
+
 [data-scene-node][data-visible="false"],
 [data-scene-edge][data-visible="false"] {
   opacity: 0;
