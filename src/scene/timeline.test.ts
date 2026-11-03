@@ -397,3 +397,13 @@ test("frameAt clamps t < 0 and t > duration", () => {
   expect(frameAt(fixture, 1e9, "full").t).toBe(7240)
   expect(frameAt(fixture, NaN, "full").t).toBe(0)
 })
+
+test("frameAt is referentially cheap: 10k calls < 50 ms", () => {
+  for (let index = 0; index < 1000; index += 1) frameAt(fixture, (index * 7) % fixture.duration, "full")
+
+  const started = performance.now()
+
+  for (let index = 0; index < 10000; index += 1) frameAt(fixture, (index * 7) % fixture.duration, "full")
+
+  expect(performance.now() - started).toBeLessThan(50)
+})

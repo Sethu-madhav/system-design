@@ -4,8 +4,12 @@ import { useSceneCue } from "@/scene"
 import type { Block, Inline, Prose } from "@/content"
 
 function Cue({ step, text }: { step: string; text: string }) {
-  const { active } = useSceneCue(step)
-  return <Highlight data-cue={step} data-active={active ? "" : undefined} seed={step}>{text}</Highlight>
+  const { active, play } = useSceneCue(step)
+  return (
+    <button type="button" data-cue={step} data-active={active ? "" : undefined} onClick={play} className="cursor-pointer text-left [font:inherit]">
+      <Highlight seed={step}>{text}</Highlight>
+    </button>
+  )
 }
 
 function renderInline(node: Inline, index: number) {
