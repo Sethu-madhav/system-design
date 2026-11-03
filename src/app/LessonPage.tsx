@@ -1,6 +1,7 @@
 import { useCallback, useEffect } from "react"
 import { H1, H2 } from "@/components/ui/typography"
-import { curriculum, neighbors } from "@/content"
+import { blockText, curriculum, neighbors } from "@/content"
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
 import { href, type LessonRoute } from "@/app/routes"
 import { NotFoundPage } from "@/app/NotFoundPage"
 import { ProseView } from "@/app/ProseView"
@@ -38,13 +39,32 @@ export function LessonPage({ route }: { route: LessonRoute }) {
 
   return (
     <SceneProvider key={lesson.slug} timeline={lesson.timeline} step={route.step} onEnd={onEnd}>
-      <div data-testid="lesson" data-slug={lesson.slug} className="space-y-8">
-        <header className="space-y-3">
+      <div data-testid="lesson" data-slug={lesson.slug} className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_11rem]">
+        <header className="space-y-3 lg:col-span-2">
+          <Breadcrumb data-testid="breadcrumb">
+            <BreadcrumbList>
+              <BreadcrumbItem><BreadcrumbLink href={href({ name: "home" })}>Home</BreadcrumbLink></BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>{track?.title}</BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem><BreadcrumbPage>{lesson.title}</BreadcrumbPage></BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
           <H1>{lesson.title}</H1>
-          <p className="font-hand text-lg text-pencil-text">{track?.title} · {lesson.minutes} min</p>
+          <p className="font-hand text-lg text-pencil-text">{lesson.minutes} min read</p>
         </header>
-        <ScenePlayer />
-        <div className="min-w-0 space-y-8">
+        <div className="lg:col-span-2"><ScenePlayer /></div>
+        <nav data-testid="toc" aria-label="On this page" className="hidden self-start lg:sticky lg:top-6 lg:col-start-2 lg:row-start-3 lg:block">
+          <p className="font-hand text-base text-pencil-text">On this page</p>
+          <ul className="space-y-1 font-hand">
+            {lesson.headings.map((heading) => (
+              <li key={heading.id} className={heading.level === 3 ? "ps-4" : undefined}>
+                <a data-toc={heading.id} href={href({ name: "lesson", slug: lesson.slug, section: heading.id })}>{blockText(heading)}</a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+        <div className="min-w-0 space-y-8 lg:col-start-1 lg:row-start-3">
           <ProseView prose={lesson.body} />
           <QuizView slug={lesson.slug} quiz={lesson.quiz} />
           <section data-testid="attribution" className="space-y-2">

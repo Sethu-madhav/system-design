@@ -126,6 +126,7 @@ export function ScenePlayer() {
   const { cols, rows } = gridOf(timeline)
   const layout = React.useMemo(() => box ? layoutScene(timeline, box.w - 2) : null, [timeline, box?.w])
   const paused = state.mode === "paused"
+  const scrolls = layout !== null && box !== null && layout.width > box.w
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
     if (event.target !== event.currentTarget) return
@@ -148,9 +149,9 @@ export function ScenePlayer() {
       onKeyDown={onKeyDown}
       className="space-y-3 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ink"
     >
-      <div ref={ref} className="w-full overflow-x-auto overflow-y-hidden" style={{ boxSizing: "content-box", paddingTop: 24, paddingBottom: 24, aspectRatio: `${cols} / ${rows}`, minHeight: rows * MIN_CELL, maxHeight: rows * MAX_CELL }}>
+      <div ref={ref} tabIndex={scrolls ? 0 : undefined} role={scrolls ? "region" : undefined} aria-label={scrolls ? "Diagram, scrolls sideways" : undefined} className="w-full overflow-x-auto overflow-y-hidden" style={{ boxSizing: "content-box", paddingTop: 24, paddingBottom: 24, aspectRatio: `${cols} / ${rows}`, minHeight: rows * MIN_CELL, maxHeight: rows * MAX_CELL }}>
         {layout ? (
-          <div data-testid="stage" className="relative mx-auto" style={{ width: layout.width, height: layout.height }}>
+          <div data-testid="stage" role="img" aria-label={frame.caption} className="relative mx-auto" style={{ width: layout.width, height: layout.height }}>
             {timeline.edges.map((edge) => {
               const g = layout.edges[edge.id]
               const view = frame.edges[edge.id]
@@ -193,7 +194,7 @@ export function ScenePlayer() {
       </div>
       <div role="group" aria-label="Playback" className="flex flex-wrap items-center justify-center gap-2">
         <Button variant="outline" size="sm" aria-label="First step" disabled={frame.t === 0} onClick={() => dispatch({ type: "first" })}>First</Button>
-        <Button variant="outline" size="sm" aria-label="Previous step" disabled={frame.stepIndex === 0} onClick={() => dispatch({ type: "prev" })}>Prev</Button>
+        <Button variant="outline" size="sm" aria-label="Previous step" disabled={frame.stepIndex === 0} onClick={() => dispatch({ type: "prev" })}>Previous</Button>
         <Button variant="default" size="sm" aria-label={paused ? "Play" : "Pause"} onClick={() => dispatch({ type: "toggle" })}>{paused ? "Play" : "Pause"}</Button>
         <Button variant="outline" size="sm" aria-label="Next step" disabled={frame.t === timeline.duration} onClick={() => dispatch({ type: "next" })}>Next</Button>
         <Button variant="outline" size="sm" aria-label="Last step" disabled={frame.t === timeline.duration} onClick={() => dispatch({ type: "last" })}>Last</Button>
