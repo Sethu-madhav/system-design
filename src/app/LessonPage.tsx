@@ -4,6 +4,7 @@ import { curriculum, neighbors } from "@/content"
 import { href, type LessonRoute } from "@/app/routes"
 import { NotFoundPage } from "@/app/NotFoundPage"
 import { ProseView } from "@/app/ProseView"
+import { SceneProvider, ScenePlayer } from "@/scene"
 
 export function LessonPage({ route }: { route: LessonRoute }) {
   const lesson = curriculum.bySlug.get(route.slug)
@@ -24,13 +25,14 @@ export function LessonPage({ route }: { route: LessonRoute }) {
   const lessonNeighbors = neighbors(curriculum, lesson.slug)
 
   return (
-    <div data-testid="lesson" data-slug={lesson.slug} className="space-y-8">
-      <header className="space-y-3">
-        <H1>{lesson.title}</H1>
-        <p className="font-hand text-lg text-pencil-text">{track?.title} · {lesson.minutes} min</p>
-      </header>
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
-        <div className="order-last min-w-0 space-y-8 lg:order-first">
+    <SceneProvider key={lesson.slug} timeline={lesson.timeline}>
+      <div data-testid="lesson" data-slug={lesson.slug} className="space-y-8">
+        <header className="space-y-3">
+          <H1>{lesson.title}</H1>
+          <p className="font-hand text-lg text-pencil-text">{track?.title} · {lesson.minutes} min</p>
+        </header>
+        <ScenePlayer />
+        <div className="min-w-0 space-y-8">
           <ProseView prose={lesson.body} />
           <section data-testid="attribution" className="space-y-2">
             <H2>Attribution</H2>
@@ -52,10 +54,7 @@ export function LessonPage({ route }: { route: LessonRoute }) {
             {lessonNeighbors.next ? <a href={href({ name: "lesson", slug: lessonNeighbors.next.slug })}>{lessonNeighbors.next.title} →</a> : null}
           </nav>
         </div>
-        <div className="order-first lg:order-last lg:sticky lg:top-6 lg:self-start">
-          <div data-testid="diagram-slot" className="min-h-64 rounded-md border-2 border-dashed border-pencil-mark/60" />
-        </div>
       </div>
-    </div>
+    </SceneProvider>
   )
 }

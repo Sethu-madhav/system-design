@@ -1,0 +1,26 @@
+[data-scene-node],
+[data-scene-edge] {
+  transition: opacity 200ms ease-out;
+}
+
+[data-scene-node][data-visible="false"],
+[data-scene-edge][data-visible="false"] {
+  opacity: 0;
+}
+
+[data-scene-node][data-focus] svg[data-ink] [data-layer="focus"],
+[data-scene-node][data-down] svg[data-ink] [data-layer="invalid"],
+[data-scene-edge][data-active] svg[data-ink] [data-layer="checked"] {
+  opacity: 1;
+  visibility: visible;
+  scale: none;
+  rotate: none;
+}
+
+[data-scene-edge][data-active] svg[data-ink] [data-layer="rest"] {
+  opacity: 0;
+}
+
+[data-cue][data-active] {
+  font-weight: 700;
+}
