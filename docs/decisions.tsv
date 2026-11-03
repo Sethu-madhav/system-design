@@ -74,3 +74,4 @@ ts	phase	decision	why	evidence	result
 2026-11-03T18:06:18Z	step16	merged the lesson card header fix	card text ran through the ruled lines because the title had no 49 px header row	PR #16, merge 619ad5b	CI green, e2e 47 in 4 runs
 2026-11-03T18:06:18Z	step16	dropped my own 390 px finding	the bad screenshot came from a stale dist built with my planted 60 px header	header 60 px before rebuild, 49 px after	no fix sent to Codex
 2026-11-03T18:06:18Z	step16	checked the live site after deploy	confirm the fix reached users	deploy run 41689981694	live gaps 4.4 to 6.6 px at 1280 and 390
+2026-11-03T18:26:23Z	step17	merged blue underlined text links	user asked for links to look clickable; nav, cards, TOC and breadcrumb left alone	PR #17, merge e377305	build 68, unit 186 in 14 files, e2e 48 in 3 runs, 4 planted bugs caught, no fix round
