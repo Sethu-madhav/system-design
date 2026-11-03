@@ -88,7 +88,7 @@ export function Shell({ children }: { children: ReactNode }) {
           <LessonNav />
         </aside>
         <main data-testid="page" className="min-w-0">
-          <Paper stock="paper" as="article" className="px-6 py-8 md:px-10 md:py-12">
+          <Paper stock="paper" as="article" tilt={false} className="px-6 py-8 md:px-10 md:py-12">
             {children}
           </Paper>
         </main>
