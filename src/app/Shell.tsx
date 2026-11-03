@@ -2,6 +2,15 @@ import type { ReactNode } from "react"
 import { href, useRoute } from "@/app/routes"
 import { curriculum } from "@/content"
 import { Paper } from "@/components/ui/paper"
+import { Icon } from "@/components/ui/icon"
+import { useProgress } from "@/progress"
+import type { LessonStatus } from "@/progress"
+
+const STATUS_MARK: Record<LessonStatus, { icon: string; label: string }> = {
+  new: { icon: "circle", label: "Not started" },
+  started: { icon: "circle-minus", label: "Started" },
+  done: { icon: "circle-check", label: "Done" },
+}
 import {
   Sidebar,
   SidebarContent,
@@ -15,6 +24,7 @@ import {
 
 export function Shell({ children }: { children: ReactNode }) {
   const route = useRoute()
+  const { status } = useProgress()
 
   return (
     <SidebarProvider className="block">
@@ -31,13 +41,22 @@ export function Shell({ children }: { children: ReactNode }) {
                 <SidebarGroup key={track.id}>
                   <SidebarGroupLabel>{track.title}</SidebarGroupLabel>
                   <SidebarMenu>
-                    {track.lessons.map((lesson) => (
-                      <SidebarMenuItem key={lesson.slug}>
-                        <SidebarMenuButton asChild isActive={route.name === "lesson" && route.slug === lesson.slug}>
-                          <a href={href({ name: "lesson", slug: lesson.slug })}>{lesson.title}</a>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
+                    {track.lessons.map((lesson) => {
+                      const lessonStatus = status(lesson.slug)
+                      const mark = STATUS_MARK[lessonStatus]
+                      return (
+                        <SidebarMenuItem key={lesson.slug}>
+                          <SidebarMenuButton asChild isActive={route.name === "lesson" && route.slug === lesson.slug}>
+                            <a href={href({ name: "lesson", slug: lesson.slug })}>
+                              {lesson.title}
+                              <span data-testid="lesson-status" data-slug={lesson.slug} data-status={lessonStatus} className="ms-auto">
+                                <Icon name={mark.icon} size={16} label={mark.label} />
+                              </span>
+                            </a>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      )
+                    })}
                   </SidebarMenu>
                 </SidebarGroup>
               ))}

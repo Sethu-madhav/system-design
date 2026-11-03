@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useCallback, useEffect } from "react"
 import { H1, H2 } from "@/components/ui/typography"
 import { curriculum, neighbors } from "@/content"
 import { href, type LessonRoute } from "@/app/routes"
@@ -6,9 +6,20 @@ import { NotFoundPage } from "@/app/NotFoundPage"
 import { ProseView } from "@/app/ProseView"
 import { QuizView } from "@/app/QuizView"
 import { SceneProvider, ScenePlayer } from "@/scene"
+import { useProgress } from "@/progress"
 
 export function LessonPage({ route }: { route: LessonRoute }) {
   const lesson = curriculum.bySlug.get(route.slug)
+  const { record } = useProgress()
+  const slug = lesson?.slug
+
+  useEffect(() => {
+    if (lesson !== undefined) record({ kind: "opened", slug: lesson.slug, at: Date.now() })
+  }, [lesson, record])
+
+  const onEnd = useCallback(() => {
+    if (slug !== undefined) record({ kind: "scene-done", slug, at: Date.now() })
+  }, [record, slug])
 
   useEffect(() => {
     if (route.section) {
@@ -26,7 +37,7 @@ export function LessonPage({ route }: { route: LessonRoute }) {
   const lessonNeighbors = neighbors(curriculum, lesson.slug)
 
   return (
-    <SceneProvider key={lesson.slug} timeline={lesson.timeline} step={route.step}>
+    <SceneProvider key={lesson.slug} timeline={lesson.timeline} step={route.step} onEnd={onEnd}>
       <div data-testid="lesson" data-slug={lesson.slug} className="space-y-8">
         <header className="space-y-3">
           <H1>{lesson.title}</H1>
