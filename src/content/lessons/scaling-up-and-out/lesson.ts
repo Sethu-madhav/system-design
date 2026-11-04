@@ -9,7 +9,7 @@ const scene = defineScene({
   db: { kind: "db", label: "Database", at: [6, 1] },
 }).steps((s) => ({
   arrive: s.step(
-    "Inkwell runs on one server and one database. The server reads the feed from the database and sends it back.",
+    "A small photo app runs on one server and one database. The server reads the feed from the database and sends it back.",
     s.send("phone", "one", "GET /feed"),
     s.send("one", "db", "SELECT"),
     s.send("db", "one", "rows", "data"),
@@ -106,12 +106,22 @@ export default defineLesson({
       title: "Azure Architecture Center: Autoscaling",
       url: "https://learn.microsoft.com/en-us/azure/architecture/best-practices/auto-scaling",
     },
+    {
+      use: "link",
+      title: "Figma: The growing pains of database architecture",
+      url: "https://www.figma.com/blog/how-figma-scaled-to-multiple-databases/",
+    },
+    {
+      use: "link",
+      title: "Figma: How Figma's databases team lived to tell the scale",
+      url: "https://www.figma.com/blog/how-figmas-databases-team-lived-to-tell-the-scale/",
+    },
   ],
   scene,
   body: ({ cue }) => md`
     ## Slow every evening
 
-    ${cue("arrive", "Inkwell started on one server and one database")}. The
+    ${cue("arrive", "A small photo app started on one server and one database")}. The
     server runs the app, and the database holds the photos, users and
     follows. For a year that was enough. Now
     ${cue("peak", "the server's CPU reaches 95% every evening")}, and the
@@ -121,7 +131,7 @@ export default defineLesson({
     The team has two ways to add capacity. It can move the app to a bigger
     machine, which is scaling up. Or it can run the app on more machines,
     which is scaling out. This lesson compares the two and the changes each
-    one needs.
+    one needs. Near the end, it looks at how Figma scaled its database.
 
     ## Slow for one user or slow for many
 
@@ -131,7 +141,7 @@ export default defineLesson({
     - If it is slow even then, the system has a performance problem. One request does too much work, for example a query that reads every photo a user follows. More machines will not help, because each request is still slow on its own. Fix the work.
     - If it is fast at 4 am and slow at 9 pm, the system has a scalability problem. Each request is fine, but the system cannot serve enough of them at once. More capacity helps.
 
-    Inkwell's feed loads in 80 ms at 4 am, so it has a scalability problem.
+    The photo app's feed loads in 80 ms at 4 am, so it has a scalability problem.
 
     > pitfall: Adding servers to fix a performance problem costs money and changes nothing for the user. Measure one request on a quiet system before you add capacity.
 
@@ -150,7 +160,7 @@ export default defineLesson({
     - **Downtime.** Moving to a bigger machine usually means stopping the app and starting it on the new one. With one machine, users see that restart.
     - **One machine.** All the work still runs on one machine, so one failure stops everything.
 
-    Inkwell keeps growing.
+    The app keeps growing.
     ${cue("grow", "A year later, traffic is 4 times higher")}, and the big
     machine is back at 95%. The next size up is the largest one sold, and it
     would last only a few months.
@@ -179,7 +189,7 @@ export default defineLesson({
     ## What makes scaling out hard
 
     Data that a server keeps between requests is called state. Before
-    scaling out, Inkwell's server kept each signed-in user's session in its
+    scaling out, the app's server kept each signed-in user's session in its
     own memory. With one server, that worked. With three, it breaks.
     ${cue("lost", "A user signs in on Server 1, and the next request lands on Server 3")},
     which has no record of the session. The user is asked to sign in again,
@@ -201,7 +211,7 @@ export default defineLesson({
     ## When a server fails
 
     One server is a single point of failure. When it crashes, or restarts
-    for an update, Inkwell is down, however big the machine is.
+    for an update, the app is down, however big the machine is.
 
     With 3 servers, the load balancer stops sending requests to the failed
     one, and the other two carry the load. Each was at 32%, so each now runs
@@ -225,8 +235,59 @@ export default defineLesson({
     next part in line. After the servers come the database, the cache and
     the network. Write down the next bottleneck in the design before traffic
     reaches it.
-    For Inkwell, the next steps are a cache in front of the database for
+    For the photo app, the next steps are a cache in front of the database for
     feed reads, and copies of the database that serve reads.
+
+    ## How Figma scaled its database
+
+    Figma is a design tool that many people can edit at once in the
+    browser. In 2023 and 2024, its engineers wrote two posts about how its
+    database grew. It follows the same steps as this lesson, at a much
+    larger scale.
+
+    In 2020, Figma kept most of its metadata, such as permissions, file
+    information and comments, in one Postgres database on Amazon RDS. Its
+    database traffic grew about 3 times every year. At the peak, the
+    database's CPU passed 65%. That was far from full, but latency gets
+    harder to predict as a database nears its limit. If the database filled
+    up, Figma would stop working.
+
+    The team's first fixes were meant to buy about a year.
+
+    - It scaled up. It moved the database to the largest machine Amazon offered.
+    - It added read replicas, which are copies of the database that answer reads.
+    - It put new features on new databases, so the main one grew more slowly.
+    - It added a connection pooler, because the connections to the database were in the thousands.
+
+    That was the ceiling for scaling up, because no bigger machine was
+    available. The replicas had limits too. Writes were a large part
+    of the load, and a replica takes only reads. Some reads could not move
+    either. A replica lags a little behind the main database, and parts of
+    the app needed the latest data.
+
+    So Figma scaled the database out. Its app already ran on thousands of
+    servers. The database was the one part that still ran on one machine.
+    The team moved groups of related tables, such as the ones for files or
+    for organizations, onto databases of their own. Each move paused
+    traffic to those tables for a short time, and for about 30 seconds
+    about 2% of requests were dropped. By the end of 2022, Figma ran about
+    a dozen of these databases. In April 2023, the largest one ran at about
+    10% CPU.
+
+    Then the bottleneck moved again. Some single tables had grown to
+    several terabytes and billions of rows. The tables with the most writes
+    would soon need more disk operations per second than one RDS database
+    supports. Moving whole tables could not help, because a table was the
+    smallest piece the team could move. So Figma began to split single
+    tables across many databases, which is called sharding. The first table
+    took about 9 months of work and was split in September 2023. Chapter 6
+    covers how sharding works.
+
+    From 2020 to early 2024, Figma's database stack grew almost 100 times.
+    In both posts, the hard part was the database, the one part that ran on
+    one machine. Scaling it up was the fast first fix, and it reached
+    its ceiling. Scaling it out took years of work, because the database
+    holds the state.
 
     ## In a design review
 
@@ -238,7 +299,7 @@ export default defineLesson({
     4. If one server fails at the peak, can the others carry its load?
     5. After this part scales, which part is next?
 
-    When you propose scaling, say which kind and why. For Inkwell it could
+    When you propose scaling, say which kind and why. For the photo app it could
     be this. Keep the feed servers stateless and run at least 3 of them, so
     one can fail at the peak. Run the database on a large machine for now,
     because it takes every write. Plan read copies of it before its CPU
@@ -257,7 +318,7 @@ export default defineLesson({
     },
     {
       kind: "choice",
-      prompt: "Inkwell's one server hits 95% CPU every evening. It keeps sessions in memory, and the team must fix the slowdown this week with no code changes. What do they do?",
+      prompt: "A photo app's one server hits 95% CPU every evening. It keeps sessions in memory, and the team must fix the slowdown this week with no code changes. What do they do?",
       options: [
         { text: "Move the app to a bigger machine", correct: true },
         { text: "Add 2 servers behind a load balancer", why: "The sessions live in one server's memory, so users would be signed out whenever a request reached another server." },
@@ -279,7 +340,7 @@ export default defineLesson({
     },
     {
       kind: "choice",
-      prompt: "Inkwell scales out from 1 server to 3, and traffic keeps growing. Which part becomes the bottleneck next?",
+      prompt: "A photo app scales out from 1 server to 3, and traffic keeps growing. Which part becomes the bottleneck next?",
       options: [
         { text: "The database that all 3 servers share", correct: true },
         { text: "The phone", why: "Each phone sends its own few requests. It does not carry the growing total." },
@@ -300,17 +361,17 @@ export default defineLesson({
     },
     {
       kind: "choice",
-      prompt: "Which part of Inkwell is the best fit for scaling up rather than out, for now?",
+      prompt: "In 2020, Figma's main database already ran on the largest machine Amazon offered, and writes were a large part of its load. Why did read replicas not solve the problem?",
       options: [
-        { text: "The main database, which takes every write", correct: true },
-        { text: "The stateless feed servers", why: "Stateless servers are the easiest part to scale out, and several of them survive a failure." },
-        { text: "The workers that resize uploaded photos", why: "Each resize job is independent, so adding more workers is easy." },
+        { text: "Every write still went to the one main database", correct: true },
+        { text: "The team had not tried a bigger machine", why: "It had already moved to the largest size, so scaling up was over." },
+        { text: "The app servers were the bottleneck", why: "Figma's app ran on thousands of servers. The one database was the part running out." },
       ],
-      explain: "The database holds the state, so splitting it across machines is hard. A bigger machine gives the team time to plan read copies and sharding, which chapter 6 covers.",
+      explain: "A replica answers reads only. To take writes off the main database, Figma had to split its data across more databases.",
     },
     {
       kind: "choice",
-      prompt: "Inkwell's one server is only 40% busy at the peak, but the app is down whenever the server restarts for updates. What fixes that?",
+      prompt: "An app's one server is only 40% busy at the peak, but the app is down whenever the server restarts for updates. What fixes that?",
       options: [
         { text: "Run at least 2 servers behind a load balancer", correct: true },
         { text: "Move to a bigger machine", why: "A bigger machine is still one machine. When it restarts, the app is still down." },
@@ -320,7 +381,7 @@ export default defineLesson({
     },
     {
       kind: "order",
-      prompt: "Put these steps for moving Inkwell from one server to three in order.",
+      prompt: "Put these steps for moving an app from one server to three in order.",
       items: [
         "Time one request at 4 am to confirm that load is the problem",
         "Move sessions and uploads out of the server into shared stores",

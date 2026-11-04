@@ -218,7 +218,7 @@ test("the real curriculum holds the scaling-up-and-out lesson", () => {
 
   expect(lesson?.track).toBe("foundations")
   expect(lesson?.order).toBe(3)
-  expect(lesson?.minutes).toBe(7)
+  expect(lesson?.minutes).toBe(10)
   expect(lesson?.headings.map((heading) => heading.id)).toEqual([
     "slow-every-evening",
     "slow-for-one-user-or-slow-for-many",
@@ -227,6 +227,7 @@ test("the real curriculum holds the scaling-up-and-out lesson", () => {
     "what-makes-scaling-out-hard",
     "when-a-server-fails",
     "the-bottleneck-moves",
+    "how-figma-scaled-its-database",
     "in-a-design-review",
   ])
   expect(lesson?.timeline.steps.map((step) => step.id)).toEqual([
@@ -239,6 +240,8 @@ test("the real curriculum holds the scaling-up-and-out lesson", () => {
     "https://12factor.net/processes",
     "https://docs.aws.amazon.com/wellarchitected/latest/reliability-pillar/rel_mitigate_interaction_failure_stateless.html",
     "https://learn.microsoft.com/en-us/azure/architecture/best-practices/auto-scaling",
+    "https://www.figma.com/blog/how-figma-scaled-to-multiple-databases/",
+    "https://www.figma.com/blog/how-figmas-databases-team-lived-to-tell-the-scale/",
   ])
 })
 
