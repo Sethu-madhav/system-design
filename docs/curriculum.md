@@ -286,9 +286,11 @@ This lesson replaces the current short one in step 18. A load balancer spreads r
 - The balancer must not become the new single point of failure. A pair shares one address, and DNS spreads traffic over several balancers.
 - Global load balancing chooses a region. Local load balancing chooses a server inside it.
 
+The case study is Dropbox's Bandaid, from a 2019 post by its engineers. Many Bandaid machines each counted only their own requests, so load across servers stayed uneven. Each server now reports how busy it is in a header on every response, and Bandaid picks the less busy of 2 random servers.
+
 The diagram has a client, a load balancer, 3 servers and a session store. Requests spread by round robin. One server fails a health check, is crossed out and skipped. A new server joins. A server being removed drains its last request first. The last step moves sessions to the shared store, so any server can serve any user.
 
-The quiz checks layer 4 versus layer 7, the right rule for long-lived connections, the cost of sticky sessions, and how a request reaches a server that has just failed.
+The quiz checks layer 4 versus layer 7, the right rule for long-lived connections, the cost of sticky sessions, and why a recent error raises a server's score at Dropbox.
 
 ### 4.3 Reverse proxies and API gateways
 
