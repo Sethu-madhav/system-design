@@ -1,6 +1,26 @@
 export type NodeKind =
-  | "client" | "internet" | "dns" | "cdn" | "lb" | "proxy" | "server"
-  | "service" | "cache" | "db" | "queue" | "worker" | "storage"
+  | "client" | "mobile" | "internet" | "dns" | "cdn" | "lb" | "proxy" | "server"
+  | "service" | "cache" | "db" | "nosql" | "queue" | "worker" | "storage"
+
+export type NodeRole = "outside" | "edge" | "compute" | "sql" | "nosql" | "cache" | "queue" | "storage"
+
+export const NODE_ROLE: Readonly<Record<NodeKind, NodeRole>> = {
+  client: "outside",
+  mobile: "outside",
+  internet: "outside",
+  dns: "edge",
+  cdn: "edge",
+  lb: "edge",
+  proxy: "edge",
+  server: "compute",
+  service: "compute",
+  worker: "compute",
+  cache: "cache",
+  db: "sql",
+  nosql: "nosql",
+  queue: "queue",
+  storage: "storage",
+}
 
 export type Cell = readonly [col: number, row: number]
 
