@@ -1,5 +1,5 @@
 import { expect, gotoReady, test } from "./fixtures"
-import { LATENCY_CORRECT, SYSTEM_DESIGN_CORRECT, passQuiz } from "./helpers"
+import { LATENCY_CORRECT, SCALING_CORRECT, SYSTEM_DESIGN_CORRECT, passQuiz } from "./helpers"
 
 const lessonPath = "/#/learn/load-balancer"
 const lessonMark = (page: import("@playwright/test").Page) =>
@@ -16,7 +16,7 @@ test("pass the quiz, reload, the sidebar shows a check for Load balancer", async
 
 test("home Continue card points at the first not-done lesson", async ({ page }) => {
   await gotoReady(page, "/#/")
-  await expect(page.getByTestId("progress-count")).toHaveText("0 of 3 lessons done")
+  await expect(page.getByTestId("progress-count")).toHaveText("0 of 4 lessons done")
   const next = page.getByTestId("next-lesson")
   await expect(next).toHaveAttribute("href", "#/learn/what-system-design-is")
   await expect(next).toHaveAttribute("data-status", "new")
@@ -28,13 +28,19 @@ test("home Continue card points at the first not-done lesson", async ({ page }) 
   await gotoReady(page, "/#/learn/what-system-design-is")
   await passQuiz(page, SYSTEM_DESIGN_CORRECT)
   await gotoReady(page, "/#/")
-  await expect(page.getByTestId("progress-count")).toHaveText("1 of 3 lessons done")
+  await expect(page.getByTestId("progress-count")).toHaveText("1 of 4 lessons done")
   await expect(next).toHaveAttribute("href", "#/learn/latency-and-throughput")
   await expect(next).toHaveAttribute("data-status", "new")
   await gotoReady(page, "/#/learn/latency-and-throughput")
   await passQuiz(page, LATENCY_CORRECT)
   await gotoReady(page, "/#/")
-  await expect(page.getByTestId("progress-count")).toHaveText("2 of 3 lessons done")
+  await expect(page.getByTestId("progress-count")).toHaveText("2 of 4 lessons done")
+  await expect(next).toHaveAttribute("href", "#/learn/scaling-up-and-out")
+  await expect(next).toHaveAttribute("data-status", "new")
+  await gotoReady(page, "/#/learn/scaling-up-and-out")
+  await passQuiz(page, SCALING_CORRECT)
+  await gotoReady(page, "/#/")
+  await expect(page.getByTestId("progress-count")).toHaveText("3 of 4 lessons done")
   await expect(next).toHaveAttribute("href", "#/learn/load-balancer")
   await expect(next).toHaveAttribute("data-status", "new")
   await gotoReady(page, lessonPath)
@@ -42,7 +48,7 @@ test("home Continue card points at the first not-done lesson", async ({ page }) 
   await gotoReady(page, "/#/")
   await expect(page.getByTestId("next-lesson")).toHaveCount(0)
   await expect(page.getByTestId("all-done")).toBeVisible()
-  await expect(page.getByTestId("progress-count")).toHaveText("3 of 3 lessons done")
+  await expect(page.getByTestId("progress-count")).toHaveText("4 of 4 lessons done")
 })
 
 test("Reset progress clears marks", async ({ page }) => {
@@ -55,7 +61,7 @@ test("Reset progress clears marks", async ({ page }) => {
   await page.getByRole("button", { name: "Reset progress" }).click()
   await page.getByRole("button", { name: "Reset", exact: true }).click()
   await expect(lessonMark(page)).toHaveAttribute("data-status", "new")
-  await expect(page.getByTestId("progress-count")).toHaveText("0 of 3 lessons done")
+  await expect(page.getByTestId("progress-count")).toHaveText("0 of 4 lessons done")
   expect(await page.evaluate(() => localStorage.getItem("sd.progress"))).toBe(null)
   await gotoReady(page, "/#/")
   await expect(lessonMark(page)).toHaveAttribute("data-status", "new")

@@ -101,3 +101,20 @@ test("latency-and-throughput shows 9 cues, 'wait' notes the queue wait and 'shed
   await gotoReady(page, `${lesson}/step/shed`)
   await expect(queue.getByTestId("scene-note")).toHaveText("full")
 })
+
+test("scaling-up-and-out shows 9 cues, 'lost' notes the missing session and 'db' marks the database busy", async ({ page }) => {
+  const lesson = "/#/learn/scaling-up-and-out"
+  await gotoReady(page, lesson)
+  await expect(page.getByRole("heading", { level: 2, name: "Slow every evening" })).toBeVisible()
+  await expect(page.locator('[data-testid="prose"] [data-cue]')).toHaveCount(9)
+  const scene = page.getByTestId("scene")
+  const three = scene.locator('[data-scene-node="three"]')
+  const db = scene.locator('[data-scene-node="db"]')
+  await expect(scene.locator('[data-scene-node][data-visible="true"]')).toHaveCount(3)
+  await expect(page.getByText("Step 1 of 9")).toBeVisible()
+  await gotoReady(page, `${lesson}/step/lost`)
+  await expect(three).toHaveAttribute("data-visible", "true")
+  await expect(three.getByTestId("scene-note")).toHaveText("who is this?")
+  await gotoReady(page, `${lesson}/step/db`)
+  await expect(db.getByTestId("scene-note")).toHaveText("CPU 90%")
+})

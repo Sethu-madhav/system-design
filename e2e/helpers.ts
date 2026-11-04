@@ -38,6 +38,17 @@ export const LATENCY_CORRECT: readonly QuizAnswer[] = [
   { radio: "Analytics events that nobody waits on" },
 ]
 
+export const SCALING_CORRECT: readonly QuizAnswer[] = [
+  { radio: "Find out why one request does so much work" },
+  { radio: "Move the app to a bigger machine" },
+  { radio: "Any server can answer any request, because user data lives outside the servers" },
+  { radio: "The database that all 3 servers share" },
+  { radio: "About 90%" },
+  { radio: "The main database, which takes every write" },
+  { radio: "Run at least 2 servers behind a load balancer" },
+  { order: "solved" },
+]
+
 export async function solveOrder(page: Page) {
   const read = () => page.locator('[data-testid="quiz-order"] li').evaluateAll((rows) =>
     rows.map((row) => Number(row.getAttribute("data-item"))),
