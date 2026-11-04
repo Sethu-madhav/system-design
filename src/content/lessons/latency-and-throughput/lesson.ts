@@ -1,7 +1,7 @@
 import { defineLesson, defineScene, md } from "@/content/author"
 
 const scene = defineScene({
-  phone: { kind: "client", label: "Phone", at: [0, 1] },
+  phone: { kind: "mobile", label: "Phone", at: [0, 1] },
   queue: { kind: "queue", label: "Queue", at: [2, 0] },
   server: { kind: "server", label: "Feed server", at: [4, 1] },
 }).steps((s) => ({

@@ -87,6 +87,18 @@ test("what-system-design-is shows 8 cues, 'dies' crosses out the database and 'b
   await expect(db.getByTestId("scene-note")).toHaveText("runs out first")
 })
 
+test("nodes carry their kind and role, and the database is filled with its role color", async ({ page }) => {
+  await gotoReady(page, "/#/learn/what-system-design-is")
+  const scene = page.getByTestId("scene")
+  const phone = scene.locator('[data-scene-node="phone"]')
+  const db = scene.locator('[data-scene-node="db"]')
+  await expect(phone).toHaveAttribute("data-kind", "mobile")
+  await expect(phone).toHaveAttribute("data-role", "outside")
+  await expect(scene.locator('[data-scene-node="server"]')).toHaveAttribute("data-role", "compute")
+  await expect(db).toHaveAttribute("data-role", "sql")
+  await expect(db.locator('svg[data-ink] [data-layer="rest"] path[fill="var(--ll-sky)"]').first()).toBeAttached()
+})
+
 test("latency-and-throughput shows 9 cues, 'wait' notes the queue wait and 'shed' marks the queue full", async ({ page }) => {
   const lesson = "/#/learn/latency-and-throughput"
   await gotoReady(page, lesson)

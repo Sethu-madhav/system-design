@@ -1,16 +1,35 @@
 import { expect, test } from "vitest"
 import { DEFAULT_KNOBS, inkFrame, runCounter, runRecipe } from "@/lib/ink"
-import type { NodeKind } from "./model"
-import { NODE_SHAPES, sceneEdgeRecipe, sceneNodeRecipe } from "./ink"
+import { NODE_ROLE, type NodeKind } from "./model"
+import { NODE_SHAPES, ROLE_PAINT, sceneEdgeRecipe, sceneNodeRecipe } from "./ink"
 
 const subpaths = (svg: string | undefined) => (svg ?? "").match(/M/g)?.length ?? 0
 const base: { tier: "lo"; density: "comfortable"; dir: "ltr"; knobs: typeof DEFAULT_KNOBS } = { tier: "lo", density: "comfortable", dir: "ltr", knobs: DEFAULT_KNOBS }
-const nodeKinds: NodeKind[] = ["client", "internet", "dns", "cdn", "lb", "proxy", "server", "service", "cache", "db", "queue", "worker", "storage"]
+const nodeKinds: NodeKind[] = ["client", "mobile", "internet", "dns", "cdn", "lb", "proxy", "server", "service", "cache", "db", "nosql", "queue", "worker", "storage"]
 
 test("every NodeKind draws a non-empty rest layer", () => {
-  expect(Object.keys(NODE_SHAPES)).toHaveLength(13)
+  expect(Object.keys(NODE_SHAPES)).toHaveLength(15)
   for (const kind of nodeKinds) {
     expect(subpaths(runRecipe(sceneNodeRecipe, { ...base, seed: kind, box: { w: 76, h: 50 }, params: { kind } }).parts.rest)).toBeGreaterThan(0)
+  }
+})
+
+const FILL: Readonly<Record<NodeKind, string>> = {
+  client: "pencil", mobile: "pencil", internet: "pencil",
+  dns: "tangerine", cdn: "tangerine", lb: "tangerine", proxy: "tangerine",
+  server: "grass", service: "grass", worker: "grass",
+  cache: "tomato", db: "sky", nosql: "grape", queue: "lemon", storage: "teal",
+}
+const ACCENTS = ["tomato", "tangerine", "lemon", "grass", "teal", "sky", "grape", "bubblegum"]
+
+test("every NodeKind fills with its role color and no other accent", () => {
+  for (const kind of nodeKinds) {
+    expect(ROLE_PAINT[NODE_ROLE[kind]]).toBe(FILL[kind])
+    const rest = runRecipe(sceneNodeRecipe, { ...base, seed: kind, box: { w: 76, h: 50 }, params: { kind } }).parts.rest ?? ""
+    expect(rest).toContain(`fill="var(--ll-${FILL[kind]})"`)
+    for (const other of ACCENTS) {
+      if (other !== FILL[kind]) expect(rest).not.toContain(`var(--ll-${other})`)
+    }
   }
 })
 

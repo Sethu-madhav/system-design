@@ -6,7 +6,7 @@ import { InkLayer, useInkBox, useInkContext } from "@/lib/ink"
 import { frameAt, type Frame, type Motion, type Timeline } from "./timeline"
 import { initialPlayer, reducePlayer, type PlayerEvent, type PlayerState } from "./player"
 import { gridOf, layoutScene, MAX_CELL, MIN_CELL, pointOn } from "./layout"
-import type { PacketTone } from "./model"
+import { NODE_ROLE, type PacketTone } from "./model"
 import { sceneEdgeRecipe, sceneNodeRecipe } from "./ink"
 import "./scene.css"
 
@@ -162,7 +162,7 @@ export function ScenePlayer() {
             {Object.entries(timeline.nodes).map(([id, def]) => {
               const rect = layout.nodes[id]
               const view = frame.nodes[id]
-              return <div key={id} data-scene-node={id} data-kind={def.kind} data-visible={String(view.visible)} aria-hidden={!view.visible} data-focus={view.focus ? "" : undefined} data-down={view.status === "down" ? "" : undefined} className="absolute" style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h }}>
+              return <div key={id} data-scene-node={id} data-kind={def.kind} data-role={NODE_ROLE[def.kind]} data-visible={String(view.visible)} aria-hidden={!view.visible} data-focus={view.focus ? "" : undefined} data-down={view.status === "down" ? "" : undefined} className="absolute" style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h }}>
                 <InkLayer recipe={sceneNodeRecipe} seed={id} params={{ kind: def.kind }} />
                 <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1 w-max max-w-[calc(100%+1.5rem)] text-center font-hand text-sm leading-tight">{def.label}</span>
                 {view.note ? <span data-testid="scene-note" className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 w-max bg-paper px-1 font-hand text-sm text-red">{view.note}</span> : null}
