@@ -31,9 +31,12 @@ function LessonNav({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <Sidebar collapsible="none" className="w-full">
       <SidebarContent>
-        {curriculum.tracks.map((track) => (
+        {curriculum.tracks.map((track, index) => (
           <SidebarGroup key={track.id}>
-            <SidebarGroupLabel>{track.title}</SidebarGroupLabel>
+            <SidebarGroupLabel className="h-auto gap-2 border-b-2 border-ink-you/40 bg-ink-you/10 py-1.5 font-script text-xl font-bold tracking-normal text-ink-you">
+              <span className="tabular-nums">{index + 1}.</span>
+              {track.title}
+            </SidebarGroupLabel>
             <SidebarMenu>
               {track.lessons.map((lesson) => {
                 const lessonStatus = status(lesson.slug)
