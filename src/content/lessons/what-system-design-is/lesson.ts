@@ -86,6 +86,11 @@ export default defineLesson({
       title: "Martin Kleppmann: Designing Data-Intensive Applications",
       url: "https://dataintensive.net/",
     },
+    {
+      use: "link",
+      title: "Nick Craver: Stack Overflow, the architecture, 2016 edition",
+      url: "https://nickcraver.com/blog/2016/02/17/stack-overflow-the-architecture-2016-edition/",
+    },
   ],
   scene,
   body: ({ cue }) => md`
@@ -100,7 +105,9 @@ export default defineLesson({
     many people use the product, how fast it must answer, or what happens when
     a machine breaks. System design is the work of finding those answers and
     then choosing the parts that meet them. This lesson shows how to start that
-    work. The rest of the course uses the same method.
+    work on a small photo app. Then it looks at how Stack Overflow ran in
+    2016, a real site that serves millions of people on very few machines.
+    The rest of the course uses the same method.
 
     ## The smallest real system
 
@@ -119,8 +126,8 @@ export default defineLesson({
     ## What the product does
 
     The first list you write is the functional requirements. They say what the
-    product does, in words a user would recognize. For Inkwell, our photo app,
-    the core list is short.
+    product does, in words a user would recognize. For the photo app, the core
+    list is short.
 
     - Users can post a photo with a caption.
     - Users can follow other users.
@@ -139,9 +146,9 @@ export default defineLesson({
     product must work, and they decide most of the design. Five come up in
     almost every system.
 
-    - **Scale.** ${cue("users", "How many users, and how often")} do they act? Inkwell has 10 million daily users, and each one opens the feed about 20 times a day.
-    - **Speed.** ${cue("speed", "How fast must each answer be?")} Inkwell's feed should load in under half a second. A feed that takes 3 seconds feels broken.
-    - **Data.** ${cue("data", "How much data, and for how long?")} Inkwell keeps every photo for as long as the account exists.
+    - **Scale.** ${cue("users", "How many users, and how often")} do they act? Say the photo app has 10 million daily users, and each one opens the feed about 20 times a day.
+    - **Speed.** ${cue("speed", "How fast must each answer be?")} The feed should load in under half a second. A feed that takes 3 seconds feels broken.
+    - **Data.** ${cue("data", "How much data, and for how long?")} The app keeps every photo for as long as the account exists.
     - **Availability.** What share of the time must the product work? A feed that is down for 9 hours a year is up 99.9% of the time.
     - **Consistency.** After a write, how soon must every reader see it? A follower can see a new photo a few seconds late. A bank balance cannot be late at all.
 
@@ -169,9 +176,9 @@ export default defineLesson({
     Every case study later in the course follows the same order of work.
 
     1. **Requirements.** Write the functional list and the non-functional numbers.
-    2. **Rough numbers.** Turn users into requests and bytes. Inkwell's 10 million users times 20 feed views is 200 million views a day, or about 2,300 a second on average. 2 million new photos a day at 500 KB each is about 1 TB of new photos a day.
+    2. **Rough numbers.** Turn users into requests and bytes. The photo app's 10 million users times 20 feed views is 200 million views a day, or about 2,300 a second on average. 2 million new photos a day at 500 KB each is about 1 TB of new photos a day.
     3. **An API.** Name the calls the product needs, such as \`POST /photos\`, \`GET /feed\` and \`POST /follows\`.
-    4. **A data model.** Name what you store and how the pieces link. Inkwell has users, photos, and follows, where a follow links two users.
+    4. **A data model.** Name what you store and how the pieces link. The photo app has users, photos, and follows, where a follow links two users.
     5. **A first design.** Draw the simplest boxes that meet the requirements, often the three boxes above.
     6. **The bottleneck and its fixes.** Find the first part that runs out as load grows. Then change only that part, and check the numbers again.
 
@@ -180,7 +187,8 @@ export default defineLesson({
     data model comes from the API, and the bottleneck shows up only when the
     numbers meet the first design.
 
-    For Inkwell, ${cue("bottleneck", "the database is the first part to run out")}.
+    For the photo app,
+    ${cue("bottleneck", "the database is the first part to run out")}.
     A read of the feed touches the database every time, and reads outnumber
     writes about 100 to 1. Later lessons fix this in different ways, with a
     cache, with copies of the database that serve reads, and by splitting the
@@ -203,7 +211,7 @@ export default defineLesson({
 
     ## No design is best in general
 
-    A design is good or bad only against its requirements. Inkwell's feed can
+    A design is good or bad only against its requirements. The photo app's feed can
     show a photo a few seconds late, so it can serve reads from a cache and
     from copies of the database. A payments system cannot show a stale
     balance, so it pays for every read to see the latest write. Put the same
@@ -213,6 +221,31 @@ export default defineLesson({
     That is why "it depends" is never the whole answer. Say what it depends
     on, such as the read-to-write ratio or how late data may be. Then pick an
     option for the numbers you have.
+
+    ## Stack Overflow in 2016
+
+    Stack Overflow is a large question and answer site for programmers. In
+    February 2016, Nick Craver, one of its engineers, wrote up how it ran.
+    On February 9 that year, its load balancers took about 209 million HTTP
+    requests, and about 66 million of those were page loads. That is about
+    2,400 requests a second on average, close to the photo app's numbers.
+
+    The design behind those numbers is the three boxes with a few more
+    added. 9 web servers run Stack Overflow and its sister sites. One app
+    serves every Q&A site, so each of those servers can serve all of them. Behind them, 4 SQL Server
+    machines form 2 clusters, and in each cluster one primary takes almost
+    all the load. 2 Redis servers hold a shared cache, so a value one web
+    server fetched saves the others a database query. 3 servers run search
+    with Elasticsearch, and 3 more run a tag engine. Every server has a
+    spare, and a second data center in Colorado can take over from New York.
+
+    A question page took about 23 ms to render on average. Craver wrote that
+    the whole site could run on 1 web server, and that this had happened by
+    accident a few times. The other 8 are there for rolling deploys, spare
+    room and redundancy. So the number of web servers came from the
+    availability requirement, not from the average load. Each other extra
+    box also answers one requirement. The cache keeps repeat reads off the
+    database, and search runs on its own servers.
 
     ## In a design review
 
@@ -225,15 +258,15 @@ export default defineLesson({
     5. Which part runs out first as load grows?
     6. What does the user see when each box fails?
 
-    When you present one, state the trade-off out loud. For Inkwell it could
-    be this. The feed may show new photos a few seconds late, and in return
+    When you present one, state the trade-off out loud. For the photo app it
+    could be this. The feed may show new photos a few seconds late, and in return
     reads can come from caches and copies, which keeps the feed fast at the
     evening peak.
   `,
   quiz: [
     {
       kind: "multi",
-      prompt: "Which of these are functional requirements for Inkwell?",
+      prompt: "Which of these are functional requirements for the photo app?",
       options: [
         { text: "Users can post a photo", correct: true },
         { text: "Users can follow other users", correct: true },
@@ -244,13 +277,13 @@ export default defineLesson({
     },
     {
       kind: "choice",
-      prompt: "The brief says \"The feed must load in under half a second at the evening peak.\" What kind of requirement is that?",
+      prompt: "In 2016, Stack Overflow ran 9 web servers for its sites, though its engineers said 1 could carry the load. Why run the other 8?",
       options: [
-        { text: "Non-functional", correct: true },
-        { text: "Functional", why: "Showing a feed is the function. The time limit says how well it must work." },
-        { text: "Neither, it is an implementation detail", why: "It is a promise to users that the design must keep, so it belongs in the requirements." },
+        { text: "Spare room for deploys, traffic peaks and failures", correct: true },
+        { text: "Each web server holds part of the data", why: "The data lives in SQL Server. One app serves every site, and each web server runs it." },
+        { text: "One server made each page too slow", why: "The site had run on 1 web server several times. The others are not there for speed." },
       ],
-      explain: "A number on speed, scale, availability, consistency or cost is a non-functional requirement.",
+      explain: "Craver named rolling deploys, spare room and redundancy. The extra servers meet availability needs, not the average load.",
     },
     {
       kind: "choice",
@@ -264,7 +297,7 @@ export default defineLesson({
     },
     {
       kind: "choice",
-      prompt: "Inkwell has 10 million daily users, and each opens the feed 20 times a day. About how many feed requests a second is that on average?",
+      prompt: "The photo app has 10 million daily users, and each opens the feed 20 times a day. About how many feed requests a second is that on average?",
       options: [
         { text: "About 2,300", correct: true },
         { text: "About 23,000", why: "200 million a day divided by the 86,400 seconds in a day is about 2,300, not 10 times that." },
@@ -274,7 +307,7 @@ export default defineLesson({
     },
     {
       kind: "choice",
-      prompt: "In the three-box design, the only database stops and every feed request fails. Inkwell must be up 99.9% of the time. What do you change first?",
+      prompt: "In the three-box design, the only database stops and every feed request fails. The app must be up 99.9% of the time. What do you change first?",
       options: [
         { text: "Add a second copy of the database that can take over", correct: true },
         { text: "Move the database to a bigger machine", why: "A bigger machine handles more load, but it still stops when it fails, and the feed fails with it." },

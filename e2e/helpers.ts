@@ -18,7 +18,7 @@ export const CORRECT: readonly QuizAnswer[] = [
 
 export const SYSTEM_DESIGN_CORRECT: readonly QuizAnswer[] = [
   { checks: ["Users can post a photo", "Users can follow other users"] },
-  { radio: "Non-functional" },
+  { radio: "Spare room for deploys, traffic peaks and failures" },
   { radio: "Who uses it, and which actions must work, such as one-to-one or group chat?" },
   { radio: "About 2,300" },
   { radio: "Add a second copy of the database that can take over" },
