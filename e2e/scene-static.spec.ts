@@ -130,3 +130,21 @@ test("scaling-up-and-out shows 9 cues, 'lost' notes the missing session and 'db'
   await gotoReady(page, `${lesson}/step/db`)
   await expect(db.getByTestId("scene-note")).toHaveText("CPU 90%")
 })
+
+test("availability shows 9 cues, 'notice' notes the missed heartbeats and 'rejoin' brings the old primary back", async ({ page }) => {
+  const lesson = "/#/learn/availability"
+  await gotoReady(page, lesson)
+  await expect(page.getByRole("heading", { level: 2, name: "Down at 2 am" })).toBeVisible()
+  await expect(page.locator('[data-testid="prose"] [data-cue]')).toHaveCount(9)
+  const scene = page.getByTestId("scene")
+  const primary = scene.locator('[data-scene-node="primary"]')
+  const standby = scene.locator('[data-scene-node="standby"]')
+  await expect(scene.locator('[data-scene-node][data-visible="true"]')).toHaveCount(4)
+  await expect(page.getByText("Step 1 of 9")).toBeVisible()
+  await gotoReady(page, `${lesson}/step/notice`)
+  await expect(primary).toHaveAttribute("data-down", "")
+  await expect(standby.getByTestId("scene-note")).toHaveText("no heartbeat for 3 s")
+  await gotoReady(page, `${lesson}/step/rejoin`)
+  await expect(primary).not.toHaveAttribute("data-down", "")
+  await expect(primary.getByTestId("scene-note")).toHaveText("now the standby")
+})
