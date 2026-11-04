@@ -3,7 +3,7 @@ import { H1, H2 } from "@/components/ui/typography"
 import { blockText, curriculum, neighbors } from "@/content"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
 import { href, type LessonRoute } from "@/app/routes"
-import { LINK_CLASS } from "@/app/link-class"
+import { LINK_CLASS, TOC_LINK_CLASS } from "@/app/link-class"
 import { NotFoundPage } from "@/app/NotFoundPage"
 import { ProseView } from "@/app/ProseView"
 import { QuizView } from "@/app/QuizView"
@@ -69,7 +69,7 @@ export function LessonPage({ route }: { route: LessonRoute }) {
           <ul className="space-y-1 font-hand">
             {lesson.headings.map((heading) => (
               <li key={heading.id} className={heading.level === 3 ? "ps-4" : undefined}>
-                <a data-toc={heading.id} href={href({ name: "lesson", slug: lesson.slug, section: heading.id })}>{blockText(heading)}</a>
+                <a data-toc={heading.id} href={href({ name: "lesson", slug: lesson.slug, section: heading.id })} className={TOC_LINK_CLASS}>{blockText(heading)}</a>
               </li>
             ))}
           </ul>
