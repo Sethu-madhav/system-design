@@ -1,5 +1,5 @@
 import { expect, gotoReady, test } from "./fixtures"
-import { CORRECT, SYSTEM_DESIGN_CORRECT, answerQuiz } from "./helpers"
+import { CORRECT, LATENCY_CORRECT, SYSTEM_DESIGN_CORRECT, answerQuiz } from "./helpers"
 
 const path = "/#/learn/load-balancer"
 
@@ -19,6 +19,14 @@ test("answering all correctly shows 8/8 and passed", async ({ page }) => {
 test("the what-system-design-is answer key scores 8/8", async ({ page }) => {
   await gotoReady(page, "/#/learn/what-system-design-is")
   await answerQuiz(page, SYSTEM_DESIGN_CORRECT)
+
+  await expect(page.getByTestId("quiz-score")).toHaveText("8/8")
+  await expect(page.getByTestId("quiz-verdict")).toHaveAttribute("data-passed", "true")
+})
+
+test("the latency-and-throughput answer key scores 8/8", async ({ page }) => {
+  await gotoReady(page, "/#/learn/latency-and-throughput")
+  await answerQuiz(page, LATENCY_CORRECT)
 
   await expect(page.getByTestId("quiz-score")).toHaveText("8/8")
   await expect(page.getByTestId("quiz-verdict")).toHaveAttribute("data-passed", "true")

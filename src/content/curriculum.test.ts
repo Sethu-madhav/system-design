@@ -180,6 +180,36 @@ test("the real curriculum holds the what-system-design-is lesson", () => {
   ])
 })
 
+test("the real curriculum holds the latency-and-throughput lesson", () => {
+  const lesson = curriculum.bySlug.get("latency-and-throughput")
+
+  expect(lesson?.track).toBe("foundations")
+  expect(lesson?.order).toBe(2)
+  expect(lesson?.minutes).toBe(9)
+  expect(lesson?.headings.map((heading) => heading.id)).toEqual([
+    "fast-at-noon-slow-at-night",
+    "two-different-numbers",
+    "improving-one-does-not-always-improve-the-other",
+    "averages-hide-the-slow-requests",
+    "slow-calls-add-up",
+    "why-the-queue-grows",
+    "little-s-law",
+    "when-load-passes-capacity",
+    "in-a-design-review",
+  ])
+  expect(lesson?.timeline.steps.map((step) => step.id)).toEqual([
+    "arrive", "serve", "rate", "slow", "busy", "wait", "little", "full", "shed",
+  ])
+  expect(lesson?.quiz).toHaveLength(8)
+  expect(lesson?.sources.map((source) => source.url)).toEqual([
+    "https://github.com/donnemartin/system-design-primer#latency-vs-throughput",
+    "https://sre.google/sre-book/monitoring-distributed-systems/",
+    "https://research.google/pubs/the-tail-at-scale/",
+    "https://people.cs.umass.edu/~emery/classes/cmpsci691st/readings/OS/Littles-Law-50-Years-Later.pdf",
+    "https://brooker.co.za/blog/2021/08/05/utilization.html",
+  ])
+})
+
 test("TRACKS lists the 12 chapters in reading order", () => {
   expect(TRACKS.map((track) => track.id)).toEqual([
     "foundations", "estimation", "network", "edge", "application", "data",
