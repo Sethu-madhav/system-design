@@ -125,7 +125,7 @@ Slug `availability`. Builds on 1.3.
 
 Availability is the share of time a system answers correctly. The lesson turns "nines" into downtime. 99.9% allows about 8.8 hours of downtime a year. 99.99% allows about 53 minutes, and 99.999% about 5 minutes. It shows the arithmetic of parts in a chain, where each part's availability multiplies. Two 99.9% parts in a row give about 99.8%. Two 99.9% parts side by side, where either one is enough, give about 99.9999%. It defines a single point of failure. It covers redundancy, heartbeats and failover. In active-passive, a standby takes over. In active-active, every copy serves traffic all the time.
 
-The diagram has a client, an active server, a standby server and a database. The active server sends heartbeats to the standby. The active server goes down. The standby notices the missing heartbeat, takes over, and the client's next request succeeds.
+The diagram has a phone, the feed servers, a primary database and a standby database. The primary copies each write to the standby and sends it heartbeats. The primary goes down. The standby notices the missed heartbeats, promotes itself, and the next request succeeds. A last step shows the feed servers serving active-active.
 
 The quiz checks a chain and a side-by-side availability calculation, how to spot a single point of failure, and active-passive versus active-active.
 
