@@ -99,9 +99,11 @@ Slug `latency-and-throughput`. Builds on 1.1.
 
 Latency is how long one request takes. Throughput is how many requests finish each second. The lesson shows why improving one does not always improve the other. It explains percentiles. The median (p50) describes a typical user, and the p99 describes the slowest 1 in 100. A page that makes 50 backend calls hits a p99-slow call on about 40% of page loads. It introduces queueing. When requests arrive faster than a server finishes them, they wait, and the wait grows sharply as the server nears 100% busy. Little's law (requests in the system = arrival rate × time in the system) ties these numbers together.
 
+The case study is Google's 2013 paper "The tail at scale". In one Google service, a single leaf server answered within 10 ms at the p99, but waiting for all the leaves took 140 ms. Sending a second copy of slow reads cut one test's p99.9 from 1,800 ms to 74 ms.
+
 The diagram has a client, a queue in front of a server, and the server. Requests arrive slowly at first and pass straight through. Then they arrive faster than the server drains them. The queue fills, and a note shows the wait growing.
 
-The quiz checks p50 versus p99, what happens to latency near full load, and one Little's law calculation.
+The quiz checks p50 versus p99, why Google's requests that waited on many servers were slower than any one server, what happens to latency near full load, and one Little's law calculation.
 
 ### 1.3 Scaling up and scaling out
 
