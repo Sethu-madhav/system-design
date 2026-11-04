@@ -110,14 +110,15 @@ export default defineLesson({
   body: ({ cue }) => md`
     ## Fast at noon, slow at night
 
-    At noon, Inkwell's feed server answers a request in about 10 ms. At 9 pm,
-    the same request sometimes takes a full second. Nobody changed the code,
+    Picture a small photo app. At noon, its feed server answers a request in
+    about 10 ms. At 9 pm, the same request sometimes takes a full second. Nobody changed the code,
     and nothing broke. The server is busier, and a busy server makes requests
     wait before it starts on them.
 
     This lesson explains that wait. It needs two measures, latency and
-    throughput, and one idea about how requests line up. The later lessons on
-    scaling, caching and back pressure use all three.
+    throughput, and one idea about how requests line up. Near the end, it
+    looks at what Google measured when one request waits on many servers.
+    The later lessons on scaling, caching and back pressure use all of this.
 
     ## Two different numbers
 
@@ -180,8 +181,8 @@ export default defineLesson({
 
     ## Slow calls add up
 
-    One page often needs many backend calls. Inkwell's feed page asks one
-    service for the photos, another for the like counts, and another for the
+    One page often needs many backend calls. The photo app's feed page asks
+    one service for the photos, another for the like counts, and another for the
     comments. The page is ready only when the slowest call returns.
 
     Say a page makes 50 calls, and each call has a 1% chance of being slower
@@ -234,8 +235,8 @@ export default defineLesson({
     waiting or being served.
 
     The law holds for any system that is not growing without limit, whatever
-    the pattern of arrivals. It is most useful for sizing. If Inkwell's feed
-    service gets 2,300 requests a second and each takes 0.2 s, about 460
+    the pattern of arrivals. It is most useful for sizing. If the photo app's
+    feed service gets 2,300 requests a second and each takes 0.2 s, about 460
     requests are in progress at once. The service needs room for 460 open
     requests, in threads, connections and memory, plus more for the peak.
 
@@ -259,6 +260,39 @@ export default defineLesson({
     add capacity, or cut the work each request needs, so that the overload
     ends. Chapter 8 covers this as back pressure.
 
+    ## Slow servers at Google
+
+    In 2013, two Google engineers, Jeffrey Dean and Luiz André Barroso,
+    published "The tail at scale". Google's services search data spread over
+    thousands of servers, so one user request can wait on many of them.
+    At that size, the slow calls from the section above stop being rare.
+
+    The paper starts with a simple case. Each server answers in 10 ms most
+    of the time, and 1 request in 100 takes a full second. If a user request
+    goes to 1 such server, 1 user in 100 waits a second. If it needs answers
+    from 100 such servers, 63% of user requests take more than a second. It
+    is the same arithmetic as the 50 calls above. 0.99 multiplied by itself 100
+    times is about 0.37, so 63% of requests hit at least one slow server.
+
+    Then the paper gives numbers from a real Google service. A root server
+    sends each request to a very large number of leaf servers and waits for
+    their answers. At the p99, one leaf answers within 10 ms. Waiting for
+    the fastest 95% of the leaves takes 70 ms. Waiting for all of them takes
+    140 ms. So the slowest 5% of the leaves cause half of the p99 time.
+
+    The slow leaves are often not slow because of the request itself. The
+    paper lists causes such as other programs on the same machine, background
+    jobs, garbage collection and queues. These come and go, so a second copy
+    of the request on another server is likely to be fast. That is the
+    second copy from the list above. In a Google test, one request read 1,000
+    values stored on 100 servers. The client sent a second copy of any read
+    that had not answered after 10 ms. The p99.9 for the whole request fell
+    from 1,800 ms to 74 ms, and the test sent only 2% more requests.
+
+    For a design, measure the p99 of each part, and count how many parts one
+    request waits on. The more parts it waits on, the more their slowest
+    answers set its latency.
+
     ## In a design review
 
     Ask these questions about any design.
@@ -270,7 +304,7 @@ export default defineLesson({
     5. What happens when arrivals pass capacity? Does every queue have a limit?
 
     When you present a design, give latency and throughput together, and name
-    the percentile. For Inkwell it could be this. The feed serves about 7,000
+    the percentile. For the photo app it could be this. The feed serves about 7,000
     requests a second at the evening peak, 3 times the daily average, with a
     p99 under 300 ms. Each server runs at no more than 70% busy, so a burst
     does not build a long queue.
@@ -278,7 +312,7 @@ export default defineLesson({
   quiz: [
     {
       kind: "choice",
-      prompt: "Inkwell's feed server is 30% busy, and one feed request takes 200 ms. Which change makes a feed load faster?",
+      prompt: "The photo app's feed server is 30% busy, and one feed request takes 200 ms. Which change makes a feed load faster?",
       options: [
         { text: "Add an index so the feed query reads less data", correct: true },
         { text: "Add a second feed server", why: "At 30% busy, requests barely wait. A second server adds throughput, but each request still takes 200 ms." },
@@ -299,13 +333,13 @@ export default defineLesson({
     },
     {
       kind: "choice",
-      prompt: "Some users say the feed takes seconds to load, but the average latency looks fine. Which number should the alert watch?",
+      prompt: "In a Google service, one leaf server answered within 10 ms at the p99, but the root waited 140 ms at the p99 for all the leaves. Why the gap?",
       options: [
-        { text: "The p99 latency", correct: true },
-        { text: "The average latency", why: "A few requests that take seconds barely move the average, which is why it looks fine now." },
-        { text: "The p50 latency", why: "The p50 describes the typical request, and the typical request is already fast." },
+        { text: "The root waits for the slowest of many leaves", correct: true },
+        { text: "Each leaf did more work when the root asked it", why: "Each leaf's own p99 was 10 ms. The gap comes from waiting on many leaves, not from more work on each." },
+        { text: "The root server itself was overloaded", why: "Waiting for the fastest 95% of the leaves took only 70 ms. The last 5% of the leaves cost the other 70 ms." },
       ],
-      explain: "The complaints come from the slowest requests, and the p99 is the number that tracks them.",
+      explain: "A request that waits on many servers is as slow as the slowest one. With many leaves, the chance that at least one is slow is high.",
     },
     {
       kind: "choice",
