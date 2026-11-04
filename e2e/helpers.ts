@@ -30,7 +30,7 @@ export const SYSTEM_DESIGN_CORRECT: readonly QuizAnswer[] = [
 export const LATENCY_CORRECT: readonly QuizAnswer[] = [
   { radio: "Add an index so the feed query reads less data" },
   { radio: "1 in 100 feed loads takes 2 s or longer" },
-  { radio: "The p99 latency" },
+  { radio: "The root waits for the slowest of many leaves" },
   { radio: "About 40%" },
   { radio: "It becomes many times longer than it is now" },
   { radio: "400" },

@@ -187,7 +187,7 @@ test("the real curriculum holds the latency-and-throughput lesson", () => {
 
   expect(lesson?.track).toBe("foundations")
   expect(lesson?.order).toBe(2)
-  expect(lesson?.minutes).toBe(9)
+  expect(lesson?.minutes).toBe(11)
   expect(lesson?.headings.map((heading) => heading.id)).toEqual([
     "fast-at-noon-slow-at-night",
     "two-different-numbers",
@@ -197,6 +197,7 @@ test("the real curriculum holds the latency-and-throughput lesson", () => {
     "why-the-queue-grows",
     "little-s-law",
     "when-load-passes-capacity",
+    "slow-servers-at-google",
     "in-a-design-review",
   ])
   expect(lesson?.timeline.steps.map((step) => step.id)).toEqual([
