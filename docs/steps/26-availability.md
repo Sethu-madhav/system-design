@@ -1,4 +1,4 @@
-# Step 25. Lesson 1.4, availability and failure
+# Step 26. Lesson 1.4, availability and failure
 
 ## Why
 
@@ -8,7 +8,7 @@ This step adds one lesson file and the tests that a fifth lesson needs. It chang
 
 ## Branch and coder rules
 
-- Branch `step/25-availability` from `origin/main`.
+- Branch `step/26-availability` from `origin/main`.
 - Use `pnpm` only. Never `npm`, `npx`, `yarn` or `bun`.
 - Read only `Instructions.md` and this spec. Do not explore the repo. Do not read `vendor/`, `node_modules/` or `dist/`.
 - Only the 6 files below may change, and only by the 2 commands in "How to do it". Do not edit any other file.
@@ -44,13 +44,13 @@ The patch in Appendix B has every test change.
 Run these from the worktree root, in order.
 
 1. Apply the patch.
-   `awk '/^````diff$/{p=1;next} /^````$/{p=0} p' docs/steps/25-availability.md > /tmp/step25.diff && git apply /tmp/step25.diff`
+   `awk '/^````diff$/{p=1;next} /^````$/{p=0} p' docs/steps/26-availability.md > /tmp/step26.diff && git apply /tmp/step26.diff`
    It must apply cleanly. If it does not, stop and report the error.
 2. Write the lesson from Appendix A.
-   `mkdir -p src/content/lessons/availability && awk '/^```ts$/{p=1;next} /^```$/{if(p){p=0}} p' docs/steps/25-availability.md > src/content/lessons/availability/lesson.ts && git status --short`
+   `mkdir -p src/content/lessons/availability && awk '/^```ts$/{p=1;next} /^```$/{if(p){p=0}} p' docs/steps/26-availability.md > src/content/lessons/availability/lesson.ts && git status --short`
    The status must list exactly these 6 lines, in any order.
    `M e2e/helpers.ts`, `M e2e/progress.spec.ts`, `M e2e/quiz.spec.ts`, `M e2e/scene-static.spec.ts`, `M src/content/curriculum.test.ts` and `?? src/content/lessons/availability/`.
-3. Install. `pnpm install > /tmp/install25.log 2>&1; tail -3 /tmp/install25.log`
+3. Install. `pnpm install > /tmp/install26.log 2>&1; tail -3 /tmp/install26.log`
 4. Run the commands in the next section.
 
 ## Commands that must pass
@@ -58,8 +58,8 @@ Run these from the worktree root, in order.
 Run each one 3 times. Send output to a log file and print only the summary lines, so the output stays short.
 
 - `pnpm build > /tmp/b.log 2>&1; grep -E "Tests +[0-9]+|error" /tmp/b.log`. The content step runs 85 tests. Main runs 80, and this step adds 4 lesson checks and 1 curriculum test.
-- `pnpm test > /tmp/t.log 2>&1; grep -E "Test Files|Tests +[0-9]" /tmp/t.log`. 203 tests in 14 files.
-- `until [ -z "$(lsof -ti :4173 -ti :4174)" ]; do sleep 3; done; pnpm e2e > /tmp/e.log 2>&1; grep -E "✘|^ +[0-9]+ (passed|failed)|already in use|already used|ERR_" /tmp/e.log`. 61 tests. Main has 59, and this step adds 2.
+- `pnpm test > /tmp/t.log 2>&1; grep -E "Test Files|Tests +[0-9]" /tmp/t.log`. 204 tests in 14 files.
+- `until [ -z "$(lsof -ti :4173 -ti :4174)" ]; do sleep 3; done; pnpm e2e > /tmp/e.log 2>&1; grep -E "✘|^ +[0-9]+ (passed|failed)|already in use|already used|ERR_" /tmp/e.log`. 62 tests. Main has 60, and this step adds 2.
 
 Other sessions on this machine sometimes use ports 4173 and 4174, or load the machine heavily. If an e2e run prints "already in use" or "already used", or its failures are `ERR_CONNECTION_REFUSED` or `ERR_TIMED_OUT`, that run does not count. Wait 20 seconds and run it again, up to 3 extra times. Report every run.
 
@@ -81,7 +81,8 @@ failures: <each failing test name and its first Error line, or none>
 - Moving the feed servers to the cell between the 2 databases fails the build's layout check "no edge crosses a node".
 - Removing `s.up("primary")` from the `rejoin` step fails the new scene-static test.
 - Changing the Q2 answer in `AVAILABILITY_CORRECT` to "About 99.9%" fails the new quiz.spec test with 7/8.
-- With all of it in place, build passed 85, unit 203 in 14 files and e2e 61. e2e passed 4 times.
+- With all of it in place, build passed 85, unit 203 in 14 files and e2e 61. e2e passed 4 times. Those runs were on main before step 25, which adds 1 unit test and 1 e2e test, so the counts above include them.
+- The patch still applies cleanly on top of step 25, and the phone in Appendix A uses the `mobile` kind from step 25.
 - At 390 px wide, the page's `scrollWidth` is 390. The diagram scrolls sideways inside its frame, the same as the earlier lessons.
 
 ## Originality
@@ -98,7 +99,7 @@ The home page lists Foundations with 4 cards, the last one "Availability and fai
 import { defineLesson, defineScene, md } from "@/content/author"
 
 const scene = defineScene({
-  phone: { kind: "client", label: "Phone", at: [0, 1] },
+  phone: { kind: "mobile", label: "Phone", at: [0, 1] },
   servers: { kind: "server", label: "Feed servers", at: [2, 1] },
   primary: { kind: "db", label: "Primary", at: [5, 0] },
   standby: { kind: "db", label: "Standby", at: [5, 2] },
