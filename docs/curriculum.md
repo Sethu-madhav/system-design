@@ -87,9 +87,11 @@ The lesson starts with a one-line idea, "let people share photos", and turns it 
 
 It explains that no design is best in general, only best for a stated set of requirements.
 
+The case study is Stack Overflow in 2016, from Nick Craver's write-up. On one day that February it served about 209 million requests on 9 web servers and 4 database servers, and one web server could carry the load. The spares were there for deploys and failures.
+
 The diagram is the smallest real system, a client, a server and a database. One request goes in and one response comes out. The next steps put a note on each box with the question a designer asks about it, such as "how many users?", "how fast?" and "what if this dies?".
 
-The quiz checks that the reader can sort requirements into functional and non-functional. It also checks that they know which question to ask first about a vague brief.
+The quiz checks that the reader can sort requirements into functional and non-functional. It also checks that they know which question to ask first about a vague brief, and why Stack Overflow ran more web servers than its load needed.
 
 ### 1.2 Latency and throughput
 
