@@ -224,7 +224,7 @@ export default defineLesson({
     more machines or more copies of the data. A requirement should be as strict
     as the product needs and no stricter.
 
-    > tradeoff: Stricter numbers cost more. Going from 99.9% to 99.99% availability cuts allowed downtime from about 9 hours a year to about 53 minutes. That usually means a second copy of every part, in a second place, plus the work to switch over.
+    > tradeoff: Stricter numbers cost more. Going from 99.9% to 99.99% availability cuts allowed downtime from about 9 hours a year to about 53 minutes. Fifty-three minutes is too little time for a person to notice a crash and fix it, so the system has to survive a broken part by itself. You run a spare copy of every server and database. You keep the spares in a different data center, so one power cut cannot take out both. You also add code that notices when a main copy fails and sends its traffic to the spare. That means paying for twice the machines, plus the time to build and test the switch.
 
     ## Ask before you draw
 
