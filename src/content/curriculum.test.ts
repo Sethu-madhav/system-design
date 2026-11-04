@@ -239,6 +239,37 @@ test("the real curriculum holds the scaling-up-and-out lesson", () => {
   ])
 })
 
+test("the real curriculum holds the availability lesson", () => {
+  const lesson = curriculum.bySlug.get("availability")
+
+  expect(lesson?.track).toBe("foundations")
+  expect(lesson?.order).toBe(4)
+  expect(lesson?.minutes).toBe(8)
+  expect(lesson?.headings.map((heading) => heading.id)).toEqual([
+    "down-at-2-am",
+    "counting-nines",
+    "parts-in-a-row-multiply",
+    "copies-side-by-side",
+    "single-points-of-failure",
+    "a-standby-takes-over",
+    "every-copy-active",
+    "a-failover-at-github",
+    "in-a-design-review",
+  ])
+  expect(lesson?.timeline.steps.map((step) => step.id)).toEqual([
+    "arrive", "copy", "beat", "crash", "notice", "promote", "retry", "rejoin", "both",
+  ])
+  expect(lesson?.quiz).toHaveLength(8)
+  expect(lesson?.sources.map((source) => source.url)).toEqual([
+    "https://github.com/donnemartin/system-design-primer#availability-in-numbers",
+    "https://sre.google/sre-book/embracing-risk/",
+    "https://docs.aws.amazon.com/wellarchitected/latest/reliability-pillar/availability.html",
+    "https://www.postgresql.org/docs/current/warm-standby-failover.html",
+    "https://martinfowler.com/articles/patterns-of-distributed-systems/heartbeat.html",
+    "https://github.blog/news-insights/company-news/oct21-post-incident-analysis/",
+  ])
+})
+
 test("TRACKS lists the 12 chapters in reading order", () => {
   expect(TRACKS.map((track) => track.id)).toEqual([
     "foundations", "estimation", "network", "edge", "application", "data",

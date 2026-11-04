@@ -49,6 +49,17 @@ export const SCALING_CORRECT: readonly QuizAnswer[] = [
   { order: "solved" },
 ]
 
+export const AVAILABILITY_CORRECT: readonly QuizAnswer[] = [
+  { radio: "About 43 minutes" },
+  { radio: "About 99.7%" },
+  { radio: "About 99.99%" },
+  { radio: "The database" },
+  { radio: "One power cut takes down both copies at once" },
+  { radio: "The stateless app servers" },
+  { radio: "The East Coast primaries still worked and held writes the West Coast never got" },
+  { order: "solved" },
+]
+
 export async function solveOrder(page: Page) {
   const read = () => page.locator('[data-testid="quiz-order"] li').evaluateAll((rows) =>
     rows.map((row) => Number(row.getAttribute("data-item"))),
