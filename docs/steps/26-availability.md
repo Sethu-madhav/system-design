@@ -4,6 +4,8 @@
 
 The course follows `docs/curriculum.md` in chapter order, and lesson 1.4 comes next. It turns nines into downtime and shows why parts in a row lower availability while copies side by side raise it. It also shows how to find a single point of failure, how a standby database takes over after missed heartbeats, and when every copy can serve at once. Lesson 1.3 ended with the one database as the next weak point, and this lesson removes it.
 
+The lesson follows the course's new example rule in `docs/curriculum.md`. It opens with a small unnamed app with one database. It then works through a public case study, GitHub's October 2018 outage, where a 43-second network cut started a database failover that left the site degraded for 24 hours. Opus checked every fact in that section against GitHub's post-incident analysis, which is in the lesson's sources.
+
 This step adds one lesson file and the tests that a fifth lesson needs. It changes no app code.
 
 ## Branch and coder rules
@@ -21,11 +23,11 @@ This step adds one lesson file and the tests that a fifth lesson needs. It chang
 
 `src/content/lessons/availability/lesson.ts` is a new file, given in Appendix A byte for byte. Its fields:
 
-- Chapter `foundations`, order 4, 6 minutes, 1,087 words.
-- 8 sections. These are "Down at 2 am", "Counting nines", "Parts in a row multiply", "Copies side by side", "Single points of failure", "A standby takes over", "Every copy active" and "In a design review".
-- The diagram has a phone, the feed servers, a primary database and a standby database. It has 9 steps, `arrive`, `copy`, `beat`, `crash`, `notice`, `promote`, `retry`, `rejoin` and `both`. The primary copies writes and sends heartbeats to the standby, then crashes. The standby notices the missed heartbeats, promotes itself and serves the next request. The old primary comes back as the standby. The last step shows the feed servers as active-active. The text cues each step once.
-- 8 quiz questions. Q1 turns 99.9% into minutes a month. Q2 is a chain calculation and Q3 a side by side calculation. Q4 spots the single point of failure. Q5 to Q7 test decisions about shared failure causes, active-active and the heartbeat timeout. Q8 orders the steps of a failover.
-- 5 further-reading links. All 5 returned 200 on 2026-11-03.
+- Chapter `foundations`, order 4, 8 minutes.
+- 9 sections. These are "Down at 2 am", "Counting nines", "Parts in a row multiply", "Copies side by side", "Single points of failure", "A standby takes over", "Every copy active", "A failover at GitHub" and "In a design review".
+- The diagram has a phone, the app servers, a primary database and a standby database. It has 9 steps, `arrive`, `copy`, `beat`, `crash`, `notice`, `promote`, `retry`, `rejoin` and `both`. The primary copies writes and sends heartbeats to the standby, then crashes. The standby notices the missed heartbeats, promotes itself and serves the next request. The old primary comes back as the standby. The last step shows the app servers as active-active. The text cues each step once.
+- 8 quiz questions. Q1 turns 99.9% into minutes a month. Q2 is a chain calculation and Q3 a side by side calculation. Q4 spots the single point of failure. Q5 and Q6 test decisions about shared failure causes and active-active. Q7 asks why GitHub's failover caused trouble. Q8 orders the steps of a failover.
+- 6 further-reading links. All 6 returned 200 on 2026-11-03. The last one is GitHub's post-incident analysis.
 
 The numbers come from a 365-day year of 8,760 hours. 99.9% leaves 8.76 hours a year, or 43.2 minutes in a 30-day month. 99.99% leaves 52.6 minutes a year and 4.3 a month. 99.999% leaves 5.3 minutes a year. In a row, 0.999² ≈ 0.998, 0.999³ ≈ 0.997 and 0.999⁵ ≈ 0.995, which is 43.7 hours a year. Side by side, 0.001 × 0.001 = 0.000001, so 99.9999%, and two 99% copies give 99.99%.
 
@@ -33,7 +35,7 @@ The numbers come from a 365-day year of 8,760 hours. 99.9% leaves 8.76 hours a y
 
 The patch in Appendix B has every test change.
 
-- `src/content/curriculum.test.ts`. A new test checks the new lesson's chapter, order, minutes, heading ids, step ids, quiz length and source URLs.
+- `src/content/curriculum.test.ts`. A new test checks the new lesson's chapter, order, 8 minutes, 9 heading ids, step ids, quiz length and 6 source URLs.
 - `e2e/helpers.ts`. A new `AVAILABILITY_CORRECT` list holds the right answers to the new quiz.
 - `e2e/quiz.spec.ts`. A new test answers the new quiz with `AVAILABILITY_CORRECT` and expects 8/8. The pass mark is 70%, so a key with one wrong answer still passes the quiz. Only this test catches it.
 - `e2e/progress.spec.ts`. The Continue card test now walks 5 lessons in reading order. After the scaling quiz passes, the count is 3 of 5 and the card points at the new lesson. After the new quiz passes, the count is 4 of 5 and the card points at the load balancer. After that quiz, the count is 5 of 5. The reset test expects "0 of 5 lessons done".
@@ -78,20 +80,23 @@ failures: <each failing test name and its first Error line, or none>
 ## Checks Opus ran on the prototype
 
 - Removing the `rejoin` cue from the text fails the build's content check "every scene step except the first is cued in the text".
-- Moving the feed servers to the cell between the 2 databases fails the build's layout check "no edge crosses a node".
+- Moving the app servers to the cell between the 2 databases fails the build's layout check "no edge crosses a node".
 - Removing `s.up("primary")` from the `rejoin` step fails the new scene-static test.
-- Changing the Q2 answer in `AVAILABILITY_CORRECT` to "About 99.9%" fails the new quiz.spec test with 7/8.
-- With all of it in place, build passed 85, unit 203 in 14 files and e2e 61. e2e passed 4 times. Those runs were on main before step 25, which adds 1 unit test and 1 e2e test, so the counts above include them.
-- The patch still applies cleanly on top of step 25, and the phone in Appendix A uses the `mobile` kind from step 25.
+- Changing the Q7 answer in `AVAILABILITY_CORRECT` to "The failover took too long to start" fails the new quiz.spec test with 7/8.
+- With all of it in place, build passed 85, unit 203 in 14 files and e2e 61. e2e passed 5 times. One more run had 3 `ERR_TIMED_OUT` failures from machine load and did not count. Those runs were on main before step 25, which adds 1 unit test and 1 e2e test. The counts in "Commands that must pass" include them.
+- The patch still applies cleanly on top of step 25, and the phone in Appendix A uses the `mobile` kind from step 25. Start this step only after step 25 is merged.
+- With step 25's patch and this one applied together on main, build passed 85, unit 204 in 14 files and e2e 62.
+- No text on the page contains "Inkwell".
+- A fact-check of the GitHub section against the post found 3 claims the post does not support. Opus rewrote them before writing this spec. The post does not say where the copies sit, that failing back would have lost writes, or that latency caused the outage.
 - At 390 px wide, the page's `scrollWidth` is 390. The diagram scrolls sideways inside its frame, the same as the earlier lessons.
 
 ## Originality
 
-Opus wrote the lesson, then read the primer's "Fail-over" section (README lines 503 to 525) and its "Availability in numbers" section (lines 535 to 580). The lesson shares the standard terms and formulas, which are nines, active-passive, active-active, heartbeats, the multiply rules for parts in a row and side by side, and the risk of losing writes that were not yet copied. It also uses the same 99.9% × 99.9% ≈ 99.8% example, which `docs/curriculum.md` names and which is plain arithmetic. The Inkwell outage, the planned downtime note, the shared failure causes, the timeout tradeoff, the single point of failure walk, the design review and the quiz are not in those sections.
+Opus wrote the lesson, then read the primer's "Fail-over" section (README lines 503 to 525) and its "Availability in numbers" section (lines 535 to 580). The lesson shares the standard terms and formulas, which are nines, active-passive, active-active, heartbeats, the multiply rules for parts in a row and side by side, and the risk of losing writes that were not yet copied. It also uses the same 99.9% × 99.9% ≈ 99.8% example, which `docs/curriculum.md` names and which is plain arithmetic. The small app's outage, the GitHub case study told in our own words, the planned downtime note, the shared failure causes, the timeout tradeoff, the single point of failure walk, the design review and the quiz are not in those sections.
 
 ## What you see
 
-The home page lists Foundations with 4 cards, the last one "Availability and failure" at 6 min. The lesson's diagram shows a phone, the feed servers and two databases, the primary above the standby. Writes and heartbeats flow from the primary to the standby. The primary gets a cross, the standby notes 3 seconds without a heartbeat, takes over, and the next request succeeds through it. The old primary comes back as the standby, and the last step shows the feed servers serving with all copies active.
+The home page lists Foundations with 4 cards, the last one "Availability and failure". The card shows 8 min. The lesson's diagram shows a phone, the app servers and two databases, the primary above the standby. Writes and heartbeats flow from the primary to the standby. The primary gets a cross, the standby notes 3 seconds without a heartbeat, takes over, and the next request succeeds through it. The old primary comes back as the standby, and the last step shows the app servers serving with all copies active. Below the active-active section, "A failover at GitHub" retells the 2018 outage and links the source.
 
 ## Appendix A. `src/content/lessons/availability/lesson.ts`
 
@@ -100,12 +105,12 @@ import { defineLesson, defineScene, md } from "@/content/author"
 
 const scene = defineScene({
   phone: { kind: "mobile", label: "Phone", at: [0, 1] },
-  servers: { kind: "server", label: "Feed servers", at: [2, 1] },
+  servers: { kind: "server", label: "App servers", at: [2, 1] },
   primary: { kind: "db", label: "Primary", at: [5, 0] },
   standby: { kind: "db", label: "Standby", at: [5, 2] },
 }).steps((s) => ({
   arrive: s.step(
-    "The feed servers read from one database, the primary. A second database, the standby, waits beside it.",
+    "The app servers read from one database, the primary. A second database, the standby, waits beside it.",
     s.send("phone", "servers", "GET /feed"),
     s.send("servers", "primary", "SELECT"),
     s.send("primary", "servers", "rows", "data"),
@@ -124,7 +129,7 @@ const scene = defineScene({
     s.note("primary", "every 1 s"),
   ),
   crash: s.step(
-    "The primary crashes. Every feed request now fails.",
+    "The primary crashes. Every request now fails.",
     s.down("primary"),
     s.send("phone", "servers", "GET /feed"),
     s.send("servers", "phone", "500", "error"),
@@ -135,12 +140,12 @@ const scene = defineScene({
     s.note("standby", "no heartbeat for 3 s"),
   ),
   promote: s.step(
-    "The standby promotes itself to primary and takes over the address the feed servers connect to.",
+    "The standby promotes itself to primary and takes over the address the app servers connect to.",
     s.focus("standby"),
     s.note("standby", "now the primary"),
   ),
   retry: s.step(
-    "The next feed request reaches the new primary and succeeds.",
+    "The next request reaches the new primary and succeeds.",
     s.send("phone", "servers", "GET /feed"),
     s.send("servers", "standby", "SELECT"),
     s.send("standby", "servers", "rows", "data"),
@@ -155,7 +160,7 @@ const scene = defineScene({
     s.note("standby", "now the primary"),
   ),
   both: s.step(
-    "The feed servers work another way. All 3 serve traffic all the time, so losing one needs no switch at all.",
+    "The app servers work another way. All 3 serve traffic all the time, so losing one needs no switch at all.",
     s.parallel(s.send("phone", "servers", "GET /feed"), s.send("phone", "servers", "GET /feed")),
     s.focus("servers"),
     s.note("servers", "3 copies, all active"),
@@ -205,21 +210,28 @@ export default defineLesson({
       title: "Patterns of Distributed Systems: HeartBeat",
       url: "https://martinfowler.com/articles/patterns-of-distributed-systems/heartbeat.html",
     },
+    {
+      use: "link",
+      title: "GitHub blog: October 21 post-incident analysis",
+      url: "https://github.blog/news-insights/company-news/oct21-post-incident-analysis/",
+    },
   ],
   scene,
   body: ({ cue }) => md`
     ## Down at 2 am
 
-    ${cue("arrive", "Inkwell's feed servers read from one database")}. One
-    night at 2 am, that database's disk fails. Every feed request returns an
-    error until an engineer wakes up, finds the cause and starts a new
-    machine. Inkwell is down for 40 minutes.
+    Start with a small app.
+    ${cue("arrive", "Its app servers read from one database")}. One night at
+    2 am, the database's disk fails. Every request returns an error until an
+    engineer wakes up, finds the cause and starts a new machine. The app is
+    down for 40 minutes.
 
-    The previous lesson made the feed servers safe to lose. Three of them
+    The previous lesson made the app servers safe to lose. Three of them
     run, and any two can carry the load. The database is still one machine.
     This lesson puts a number on how often a system works. It shows how
     parts combine, and how a second database takes over when the first one
-    fails.
+    fails. Then it follows a real failover at GitHub, where the same steps
+    ran across two data centers.
 
     ## Counting nines
 
@@ -231,14 +243,14 @@ export default defineLesson({
     - **99.99%, four nines.** About 53 minutes a year, or 4 minutes a month.
     - **99.999%, five nines.** About 5 minutes a year.
 
-    Each extra nine cuts the allowed downtime by 10 times. Inkwell's
+    Each extra nine cuts the allowed downtime by 10 times. The small app's
     40-minute outage almost used up a year of four nines in one night.
 
     > note: Planned downtime looks the same to users as a crash. Unless the goal says otherwise, a database upgrade that stops the app for 20 minutes uses 20 minutes of the budget.
 
     ## Parts in a row multiply
 
-    A feed request passes through several parts, and it fails if any one of
+    A request passes through several parts, and it fails if any one of
     them fails. For parts in a row, multiply their availabilities.
 
     Two parts at 99.9% each give 0.999 × 0.999, which is about 99.8%. That
@@ -273,8 +285,8 @@ export default defineLesson({
     failure. To find them, follow one request from the phone to the
     database. At each part, ask what happens if it stops.
 
-    - **The load balancer.** Inkwell runs two that share one address, so either one is enough. Chapter 4 covers how.
-    - **The feed servers.** Any two of the three can carry the peak.
+    - **The load balancer.** The app runs two that share one address, so either one is enough. Chapter 4 covers how.
+    - **The app servers.** Any two of the three can carry the peak.
     - **The database.** There is one, so it is a single point of failure.
 
     Removing one means adding a copy that can take over, which is called
@@ -282,7 +294,7 @@ export default defineLesson({
 
     ## A standby takes over
 
-    Inkwell adds a second database, the standby.
+    The app adds a second database, the standby.
     ${cue("copy", "Every write the primary takes is also sent to the standby")},
     so the standby holds the same data. It serves no traffic and only waits. This
     setup is called active-passive.
@@ -290,12 +302,12 @@ export default defineLesson({
     The standby needs to know when the primary dies.
     ${cue("beat", "Once a second, the primary sends the standby a heartbeat")},
     a short message that says it is alive. Then
-    ${cue("crash", "the primary crashes")}, and feed requests fail.
+    ${cue("crash", "the primary crashes")}, and requests fail.
     ${cue("notice", "The standby misses 3 heartbeats in a row")} and decides
     the primary is gone.
     ${cue("promote", "It promotes itself to primary and takes over the address")}
-    that the feed servers connect to. The servers do not need new settings.
-    ${cue("retry", "The next feed request reaches the new primary and succeeds")}.
+    that the app servers connect to. The servers do not need new settings.
+    ${cue("retry", "The next request reaches the new primary and succeeds")}.
 
     Switching to the standby is called failover. Here it took about 3
     seconds to notice and a few more to promote, instead of 40 minutes.
@@ -313,7 +325,7 @@ export default defineLesson({
     ## Every copy active
 
     Active-active is the other way to use copies.
-    ${cue("both", "Every copy serves traffic all the time")}. Inkwell's feed
+    ${cue("both", "Every copy serves traffic all the time")}. The app
     servers already work this way. When one fails, the load balancer stops
     sending it requests, and the others carry on. There is no switch to wait
     for, and no copy sits idle.
@@ -322,7 +334,40 @@ export default defineLesson({
     one that failed, as the previous lesson showed. Active-active is easy
     for stateless servers. It is hard for a database, because two copies
     that both take writes can accept changes that conflict. That is why
-    Inkwell's database starts with active-passive.
+    the app's database starts with active-passive.
+
+    ## A failover at GitHub
+
+    GitHub ran the same pattern at a much larger size. It keeps its data in
+    many MySQL clusters. The app sends each cluster's writes to its primary,
+    and copies of the primary serve reads. A tool called Orchestrator
+    manages the clusters and runs failover. Its nodes sit in several places,
+    and enough of them must agree before a failover starts.
+
+    On October 21, 2018, at 22:52 UTC, engineers were replacing failing
+    network equipment on the US East Coast. The work cut the link between
+    the East Coast network hub and the main East Coast data center. The link
+    came back after 43 seconds.
+
+    Those 43 seconds were long enough for a failover. The Orchestrator nodes
+    in a West Coast data center and in a public cloud agreed without the
+    East Coast data center. They moved the primaries to the West Coast, and
+    the app began sending its writes there. The East Coast primaries had not
+    crashed. They had only lost the network for a moment, which is the
+    false alarm from the timeout tradeoff above.
+
+    Two problems followed. The East Coast primaries held a few seconds of
+    writes that had never reached the West Coast. Meanwhile the West Coast
+    primaries took new writes for nearly 40 minutes. The two sides now held
+    different data, and GitHub could not safely switch back. It put the
+    integrity of user data first, even though that left the site unusable
+    for many users for a while. Service stayed degraded for 24 hours and
+    11 minutes while the team repaired the databases.
+
+    The failover ran the same steps as in the small app, with Orchestrator
+    doing the checking. A failover on a 43-second network fault, plus the
+    writes that had not been copied yet, turned a short fault into a day of
+    degraded service.
 
     ## In a design review
 
@@ -334,15 +379,15 @@ export default defineLesson({
     4. How does the system notice a failure, and how long does the switch take?
     5. Can both copies fail for the same reason?
 
-    When you add a copy, say which kind and why. For Inkwell it could be
-    this. Run the feed servers active-active, at least 3 of them. Run the
+    When you add a copy, say which kind and why. For the small app it could
+    be this. Run the app servers active-active, at least 3 of them. Run the
     database active-passive, with the standby in a different data center,
     and test failover every month.
   `,
   quiz: [
     {
       kind: "choice",
-      prompt: "Inkwell promises 99.9% availability each month. About how much downtime does a 30-day month allow?",
+      prompt: "An app promises 99.9% availability each month. About how much downtime does a 30-day month allow?",
       options: [
         { text: "About 43 minutes", correct: true },
         { text: "About 9 hours", why: "That is the budget for a whole year at 99.9%." },
@@ -352,7 +397,7 @@ export default defineLesson({
     },
     {
       kind: "choice",
-      prompt: "A feed request passes a load balancer, a feed server and a database. It needs all three, and each is 99.9% available. About how available is the feed?",
+      prompt: "A request passes a load balancer, an app server and a database. It needs all three, and each is 99.9% available. About how available is the app?",
       options: [
         { text: "About 99.7%", correct: true },
         { text: "About 99.9%", why: "Each part can fail on its own, so the downtime of all three adds up." },
@@ -372,10 +417,10 @@ export default defineLesson({
     },
     {
       kind: "choice",
-      prompt: "Inkwell runs 2 load balancers that share one address, 3 feed servers and 1 database. Which part is a single point of failure?",
+      prompt: "An app runs 2 load balancers that share one address, 3 app servers and 1 database. Which part is a single point of failure?",
       options: [
         { text: "The database", correct: true },
-        { text: "The feed servers", why: "Any two of the three can carry the load, so losing one stops nothing." },
+        { text: "The app servers", why: "Any two of the three can carry the load, so losing one stops nothing." },
         { text: "The load balancers", why: "If one fails, the other takes over the shared address." },
       ],
       explain: "Only the database has no copy that can take over.",
@@ -393,9 +438,9 @@ export default defineLesson({
     },
     {
       kind: "choice",
-      prompt: "Which part of Inkwell suits active-active best?",
+      prompt: "The same app has load balancers, app servers, a database and a nightly job. Which part suits active-active best?",
       options: [
-        { text: "The stateless feed servers", correct: true },
+        { text: "The stateless app servers", correct: true },
         { text: "The main database", why: "Two copies that both take writes can accept changes that conflict, so a database usually starts active-passive." },
         { text: "A job that must run exactly once each night", why: "If every copy runs it, it runs several times. One active copy with a standby fits better." },
       ],
@@ -404,13 +449,13 @@ export default defineLesson({
     },
     {
       kind: "choice",
-      prompt: "The standby takes over after it misses a single heartbeat. What is likely to go wrong?",
+      prompt: "At GitHub in 2018, a 43-second network cut led to a failover to the West Coast. Why did that cause trouble?",
       options: [
-        { text: "A short network delay makes it take over while the primary still works", correct: true },
-        { text: "Failover takes too long", why: "One missed heartbeat is the fastest setting. The problem is false alarms." },
-        { text: "The primary has to send more heartbeats", why: "The primary sends at the same rate. Only the number of misses the standby waits for changed." },
+        { text: "The East Coast primaries still worked and held writes the West Coast never got", correct: true },
+        { text: "The failover took too long to start", why: "It started within the 43 seconds. The problem was that it started at all." },
+        { text: "Both copies sat in the same data center", why: "The failover moved the primaries from the East Coast to the West Coast, so the copies were far apart." },
       ],
-      explain: "With two databases acting as primary, writes can go to both and disagree. A few missed heartbeats in a row is safer.",
+      explain: "The primaries had only lost the network for a moment. Promoting the copies left two sets of writes that disagreed, so GitHub could not simply switch back.",
       replay: "notice",
     },
     {
@@ -420,7 +465,7 @@ export default defineLesson({
         "The primary crashes and stops sending heartbeats",
         "The standby misses several heartbeats in a row",
         "The standby promotes itself and takes over the primary's address",
-        "The next query from the feed servers reaches the new primary",
+        "The next query from the app servers reaches the new primary",
       ],
       explain: "The standby can only act after it notices the silence, and the servers reach it only after it owns the address.",
     },
@@ -432,7 +477,7 @@ export default defineLesson({
 
 ````diff
 diff --git a/e2e/helpers.ts b/e2e/helpers.ts
-index c74f721..2dda513 100644
+index c74f721..dfb3d2f 100644
 --- a/e2e/helpers.ts
 +++ b/e2e/helpers.ts
 @@ -49,6 +49,17 @@ export const SCALING_CORRECT: readonly QuizAnswer[] = [
@@ -445,8 +490,8 @@ index c74f721..2dda513 100644
 +  { radio: "About 99.99%" },
 +  { radio: "The database" },
 +  { radio: "One power cut takes down both copies at once" },
-+  { radio: "The stateless feed servers" },
-+  { radio: "A short network delay makes it take over while the primary still works" },
++  { radio: "The stateless app servers" },
++  { radio: "The East Coast primaries still worked and held writes the West Coast never got" },
 +  { order: "solved" },
 +]
 +
@@ -573,10 +618,10 @@ index dffaee5..771d7e6 100644
 +  await expect(primary.getByTestId("scene-note")).toHaveText("now the standby")
 +})
 diff --git a/src/content/curriculum.test.ts b/src/content/curriculum.test.ts
-index ebd92d7..7db2a81 100644
+index ebd92d7..3fe172c 100644
 --- a/src/content/curriculum.test.ts
 +++ b/src/content/curriculum.test.ts
-@@ -239,6 +239,35 @@ test("the real curriculum holds the scaling-up-and-out lesson", () => {
+@@ -239,6 +239,37 @@ test("the real curriculum holds the scaling-up-and-out lesson", () => {
    ])
  })
  
@@ -585,7 +630,7 @@ index ebd92d7..7db2a81 100644
 +
 +  expect(lesson?.track).toBe("foundations")
 +  expect(lesson?.order).toBe(4)
-+  expect(lesson?.minutes).toBe(6)
++  expect(lesson?.minutes).toBe(8)
 +  expect(lesson?.headings.map((heading) => heading.id)).toEqual([
 +    "down-at-2-am",
 +    "counting-nines",
@@ -594,6 +639,7 @@ index ebd92d7..7db2a81 100644
 +    "single-points-of-failure",
 +    "a-standby-takes-over",
 +    "every-copy-active",
++    "a-failover-at-github",
 +    "in-a-design-review",
 +  ])
 +  expect(lesson?.timeline.steps.map((step) => step.id)).toEqual([
@@ -606,6 +652,7 @@ index ebd92d7..7db2a81 100644
 +    "https://docs.aws.amazon.com/wellarchitected/latest/reliability-pillar/availability.html",
 +    "https://www.postgresql.org/docs/current/warm-standby-failover.html",
 +    "https://martinfowler.com/articles/patterns-of-distributed-systems/heartbeat.html",
++    "https://github.blog/news-insights/company-news/oct21-post-incident-analysis/",
 +  ])
 +})
 +

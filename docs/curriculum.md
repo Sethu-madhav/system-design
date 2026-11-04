@@ -2,7 +2,7 @@
 
 This file lists every chapter and lesson the app will teach, in the order a learner reads them. It is the plan for all lesson specs after step 16. Opus wrote it on 2026-11-03.
 
-Every lesson is original writing. No lesson adapts, paraphrases or follows the outline of any repo in `docs/sources.md`. Those repos appear only as further-reading links. The chapter order, the lesson split, the running example and the diagrams below are our own.
+Every lesson is original writing. No lesson adapts, paraphrases or follows the outline of any repo in `docs/sources.md`. Those repos appear only as further-reading links. The chapter order, the lesson split, the examples and the diagrams below are our own.
 
 ## Who it is for
 
@@ -32,28 +32,20 @@ Each chapter uses only ideas from the chapters before it.
 11. **Security** covers who may do what, and how to keep data safe.
 12. **Case studies** design whole products using everything above.
 
-## The running example
+## Examples and case studies
 
-Most lessons use one made-up product, Inkwell. Inkwell is a photo-sharing app. Users post photos, follow each other, comment, and read a feed.
+Each lesson opens with a small example. It is an unnamed app with one server and one database, or the least the idea needs. The small example explains the idea without the detail of a real company's setup.
 
-One product keeps the numbers comparable between lessons. The reader already knows how Inkwell's traffic looks, so a new lesson only has to explain the new idea. A lesson leaves Inkwell when another product shows its idea better. The rate limiting lesson, for example, uses a public API.
+The lesson then grows the example and works through a public case study. A case study is a company's engineering post or post-incident report that shows the idea at real scale. The lesson checks the facts against the source, retells them in its own words, and links the source.
 
-Inkwell's rough numbers, used across the course:
-
-| Measure | Value |
-| :--- | ---: |
-| Daily active users | 10 million |
-| Feed views per user per day | 20 |
-| Photos posted per user per day | 0.2 |
-| Average photo size after compression | 500 KB |
-| Reads for each write | about 100 |
+The course grows the same way. Early chapters use small systems and round numbers. Later chapters use bigger systems, more failure cases and more trade-offs. The last chapter designs whole products.
 
 ## What every lesson contains
 
 A lesson is one page with one diagram and one quiz. Each lesson meets this bar.
 
 - It takes 6 to 12 minutes, which is about 1,000 to 2,000 words plus the diagram.
-- It opens with a concrete problem, such as "Inkwell's one server hits 100% CPU every evening". The idea comes after the problem.
+- It opens with a concrete problem, such as "the app's one server hits 100% CPU every evening". The idea comes after the problem.
 - It shows how the thing works in enough detail to draw it on a whiteboard.
 - It gives each real option a name and says when to pick it. "It depends" is never the whole answer.
 - It has a section on failure. That section says what breaks, what the user sees, and what the design does about it.
@@ -123,11 +115,11 @@ The quiz checks which kind of scaling fits a given situation, and where the bott
 
 Slug `availability`. Builds on 1.3.
 
-Availability is the share of time a system answers correctly. The lesson turns "nines" into downtime. 99.9% allows about 8.8 hours of downtime a year. 99.99% allows about 53 minutes, and 99.999% about 5 minutes. It shows the arithmetic of parts in a chain, where each part's availability multiplies. Two 99.9% parts in a row give about 99.8%. Two 99.9% parts side by side, where either one is enough, give about 99.9999%. It defines a single point of failure. It covers redundancy, heartbeats and failover. In active-passive, a standby takes over. In active-active, every copy serves traffic all the time.
+Availability is the share of time a system answers correctly. The lesson turns "nines" into downtime. 99.9% allows about 8.8 hours of downtime a year. 99.99% allows about 53 minutes, and 99.999% about 5 minutes. It shows the arithmetic of parts in a chain, where each part's availability multiplies. Two 99.9% parts in a row give about 99.8%. Two 99.9% parts side by side, where either one is enough, give about 99.9999%. It defines a single point of failure. It covers redundancy, heartbeats and failover. In active-passive, a standby takes over. In active-active, every copy serves traffic all the time. The case study is GitHub's October 2018 outage. A 43-second network cut made its database tool fail over to another coast while the old primaries still worked, and the site was degraded for 24 hours.
 
-The diagram has a phone, the feed servers, a primary database and a standby database. The primary copies each write to the standby and sends it heartbeats. The primary goes down. The standby notices the missed heartbeats, promotes itself, and the next request succeeds. A last step shows the feed servers serving active-active.
+The diagram has a phone, the app servers, a primary database and a standby database. The primary copies each write to the standby and sends it heartbeats. The primary goes down. The standby notices the missed heartbeats, promotes itself, and the next request succeeds. A last step shows the app servers serving active-active.
 
-The quiz checks a chain and a side-by-side availability calculation, how to spot a single point of failure, and active-passive versus active-active.
+The quiz checks a chain and a side-by-side availability calculation, how to spot a single point of failure, active-passive versus active-active, and what went wrong in GitHub's failover.
 
 ### 1.5 Consistency when the network splits
 
@@ -165,7 +157,7 @@ The quiz checks the order of these numbers, and which fix helps a slow page made
 
 Slug `estimating-traffic`. Builds on 2.1.
 
-Daily users × actions per user ÷ 86,400 seconds gives the average requests per second. The lesson works the formula for Inkwell's feed. 10 million users × 20 views ÷ 86,400 is about 2,300 reads per second. It explains the peak factor, where the busiest hour runs 2 to 10 times the average. It explains the read-to-write ratio and why it decides whether a cache is worth adding. It shows how to round so the math stays mental.
+Daily users × actions per user ÷ 86,400 seconds gives the average requests per second. The lesson works the formula for a photo app's feed with 10 million daily users. 10 million users × 20 views ÷ 86,400 is about 2,300 reads per second. It explains the peak factor, where the busiest hour runs 2 to 10 times the average. It explains the read-to-write ratio and why it decides whether a cache is worth adding. It shows how to round so the math stays mental.
 
 The diagram has many clients sending to a server, which reads from a cache and writes to a database. Notes show the average rate, the peak rate, and the split between reads and writes.
 
@@ -175,7 +167,7 @@ The quiz asks for 2 estimates from given numbers, and asks what a 100-to-1 read-
 
 Slug `estimating-storage`. Builds on 2.2.
 
-Bytes per record × records per day × days kept gives the storage, and replication multiplies it. The lesson works Inkwell's photos. 2 million photos a day × 500 KB is about 1 TB a day, or about 365 TB a year before copies. It separates metadata, small rows in a database, from blobs, large files in object storage. It estimates bandwidth as requests per second × response size, and shows that serving photos costs far more bandwidth than storing them.
+Bytes per record × records per day × days kept gives the storage, and replication multiplies it. The lesson works the photos for the same app. 2 million photos a day × 500 KB is about 1 TB a day, or about 365 TB a year before copies. It separates metadata, small rows in a database, from blobs, large files in object storage. It estimates bandwidth as requests per second × response size, and shows that serving photos costs far more bandwidth than storing them.
 
 The diagram has a client uploading a photo to a server. The server stores the file in storage and a small metadata row in a database, and the database copies the row to 2 replicas. Notes give the size of each piece and the yearly totals.
 
@@ -218,9 +210,9 @@ The quiz checks the order of the steps, and which steps a second request on the 
 
 Slug `dns`. Builds on 3.1.
 
-A recursive resolver asks the root servers, then the servers for `.app`, then Inkwell's own name servers, and caches each answer. The lesson covers the main record types: A, AAAA, CNAME, MX and NS. It explains how TTL controls caching. It covers DNS as a traffic tool. DNS can send users to the nearest region, split traffic by weight, and move traffic away from a failed region. It also covers the limit of DNS. Clients and resolvers cache answers, sometimes past the TTL, so a DNS change does not reach everyone at once.
+A recursive resolver asks the root servers, then the servers for `.app`, then the app's own name servers, and caches each answer. The lesson covers the main record types: A, AAAA, CNAME, MX and NS. It explains how TTL controls caching. It covers DNS as a traffic tool. DNS can send users to the nearest region, split traffic by weight, and move traffic away from a failed region. It also covers the limit of DNS. Clients and resolvers cache answers, sometimes past the TTL, so a DNS change does not reach everyone at once.
 
-The diagram has a client, a resolver, a root server, a `.app` server and Inkwell's name server. The first lookup walks the whole chain. A second lookup is answered from the resolver's cache, and a note shows the TTL counting down.
+The diagram has a client, a resolver, a root server, a `.app` server and the app's name server. The first lookup walks the whole chain. A second lookup is answered from the resolver's cache, and a note shows the TTL counting down.
 
 The quiz checks the lookup order, what TTL controls, and why DNS failover is slow for some users.
 
@@ -316,7 +308,7 @@ The quiz checks forward versus reverse proxies, and which checks belong in the g
 
 Slug `rate-limiting`. Builds on 4.3.
 
-Inkwell opens a public API, and one script sends 5,000 requests a second. The lesson explains why systems limit request rates. Limits stop abuse, keep one customer from starving the others, and control cost. It compares the algorithms:
+A photo app opens a public API, and one script sends 5,000 requests a second. The lesson explains why systems limit request rates. Limits stop abuse, keep one customer from starving the others, and control cost. It compares the algorithms:
 
 - fixed window;
 - sliding log;
@@ -389,7 +381,7 @@ The quiz checks which style fits public, internal and mobile APIs, and why curso
 
 Slug `real-time-updates`. Builds on 5.4.
 
-Inkwell wants a new comment to appear without a reload. The lesson compares 4 ways to do that:
+A photo app wants a new comment to appear without a reload. The lesson compares 4 ways to do that:
 
 - Short polling asks over and over.
 - Long polling asks and waits for an answer.
@@ -443,7 +435,7 @@ The lesson surveys these stores and the access pattern each one suits:
 
 It gives a way to choose. Start from the queries the product runs, then the consistency it needs, then the scale. It warns against picking a store for its popularity.
 
-The diagram has an Inkwell server sending each kind of data to its own store. Accounts and follows go to a relational database, sessions to a key-value cache, photos to object storage, and captions to a search service.
+The diagram has an app server sending each kind of data to its own store. Accounts and follows go to a relational database, sessions to a key-value cache, photos to object storage, and captions to a search service.
 
 The quiz gives 4 data needs and asks which store fits each.
 
@@ -505,7 +497,7 @@ The quiz matches features to the weakest guarantee that still keeps each one cor
 
 Slug `sharding`. Builds on 6.4.
 
-Inkwell's database can no longer hold all the writes or all the data. The lesson covers choosing a shard key. It compares range sharding, which keeps neighbors together and risks hot spots, with hash sharding, which spreads load and breaks range queries. It covers hot keys, such as a celebrity's account. It covers queries and joins that span shards, and moving data when shards are added.
+A growing app's database can no longer hold all the writes or all the data. The lesson covers choosing a shard key. It compares range sharding, which keeps neighbors together and risks hot spots, with hash sharding, which spreads load and breaks range queries. It covers hot keys, such as a celebrity's account. It covers queries and joins that span shards, and moving data when shards are added.
 
 The diagram has a server, a router and 3 database shards. Requests for users 17, 42 and 90 each go to the shard that owns them. A celebrity's account floods one shard, shown by a note. A fourth shard is added, and some data moves to it.
 
@@ -800,9 +792,9 @@ The quiz checks why a slow hash, sessions versus tokens for a given app, and how
 
 Slug `authorization`. Builds on 11.1.
 
-Authentication proves who someone is. Authorization decides what they may do. The lesson covers roles and permissions, and checking them in every service, not only at the edge. It explains the OAuth 2.0 authorization code flow, which lets a printing app read a user's Inkwell photos without ever seeing the password. It covers scopes that limit what the app may do.
+Authentication proves who someone is. Authorization decides what they may do. The lesson covers roles and permissions, and checking them in every service, not only at the edge. It explains the OAuth 2.0 authorization code flow, which lets a printing app read a user's photos on a photo app without ever seeing the password. It covers scopes that limit what the app may do.
 
-The diagram has a client, a printing app as a server, Inkwell's sign-in service and Inkwell's photo API. The user approves access at the sign-in service. The printing app trades a one-time code for a token, then calls the photo API with the token and gets the photos.
+The diagram has a client, a printing app as a server, the photo app's sign-in service and its photo API. The user approves access at the sign-in service. The printing app trades a one-time code for a token, then calls the photo API with the token and gets the photos.
 
 The quiz checks authentication versus authorization, and why the printing app never receives the password.
 
