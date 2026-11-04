@@ -60,6 +60,17 @@ export const AVAILABILITY_CORRECT: readonly QuizAnswer[] = [
   { order: "solved" },
 ]
 
+export const CONSISTENCY_CORRECT: readonly QuizAnswer[] = [
+  { radio: "Refuse it, so the balance cannot be spent twice" },
+  { radio: "Accept it and add the counts together when the link returns" },
+  { radio: "Nothing. The choice is forced only during a split" },
+  { radio: "Networks break, so the system will face splits whether it plans for them or not" },
+  { radio: "About one coast-to-coast round trip, roughly 70 ms, on every write" },
+  { radio: "The items added on the other side disappear without an error" },
+  { radio: "An item they deleted comes back" },
+  { order: "solved" },
+]
+
 export async function solveOrder(page: Page) {
   const read = () => page.locator('[data-testid="quiz-order"] li').evaluateAll((rows) =>
     rows.map((row) => Number(row.getAttribute("data-item"))),

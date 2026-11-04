@@ -278,6 +278,35 @@ test("the real curriculum holds the availability lesson", () => {
   ])
 })
 
+test("the real curriculum holds the consistency-and-partitions lesson", () => {
+  const lesson = curriculum.bySlug.get("consistency-and-partitions")
+
+  expect(lesson?.track).toBe("foundations")
+  expect(lesson?.order).toBe(5)
+  expect(lesson?.minutes).toBe(9)
+  expect(lesson?.headings.map((heading) => heading.id)).toEqual([
+    "two-copies-two-places",
+    "the-link-breaks",
+    "the-first-choice-is-to-refuse",
+    "the-second-choice-is-to-accept",
+    "the-cap-theorem-stated-carefully",
+    "the-cost-on-a-normal-day",
+    "amazon-s-shopping-cart",
+    "in-a-design-review",
+  ])
+  expect(lesson?.timeline.steps.map((step) => step.id)).toEqual([
+    "write", "read", "split", "stale", "refuse", "accept", "heal", "merge", "wait",
+  ])
+  expect(lesson?.quiz).toHaveLength(8)
+  expect(lesson?.sources.map((source) => source.url)).toEqual([
+    "https://github.com/donnemartin/system-design-primer#cap-theorem",
+    "https://www.infoq.com/articles/cap-twelve-years-later-how-the-rules-have-changed/",
+    "https://martin.kleppmann.com/2015/05/11/please-stop-calling-databases-cp-or-ap.html",
+    "https://jepsen.io/consistency",
+    "https://www.allthingsdistributed.com/2007/10/amazons_dynamo.html",
+  ])
+})
+
 test("TRACKS lists the 12 chapters in reading order", () => {
   expect(TRACKS.map((track) => track.id)).toEqual([
     "foundations", "estimation", "network", "edge", "application", "data",
