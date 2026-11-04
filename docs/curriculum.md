@@ -109,11 +109,11 @@ The quiz checks p50 versus p99, why Google's requests that waited on many server
 
 Slug `scaling-up-and-out`. Builds on 1.2.
 
-Scaling up means buying a bigger machine. Scaling out means adding more machines. The lesson compares the two on cost, limits, downtime and difficulty. It separates a performance problem, where the system is slow for one user, from a scalability problem, where it is fast for one user and slow for a million. It names state as what makes scaling out hard. Any server must be able to handle any request, so data cannot live only in one server's memory.
+Scaling up means buying a bigger machine. Scaling out means adding more machines. The lesson compares the two on cost, limits, downtime and difficulty. It separates a performance problem, where the system is slow for one user, from a scalability problem, where it is fast for one user and slow for a million. It names state as what makes scaling out hard. Any server must be able to handle any request, so data cannot live only in one server's memory. The case study is Figma's database, from two posts by its engineers. In 2020, Figma ran one Postgres database, and its traffic grew about 3 times a year. The team moved it to the largest machine Amazon offered, then moved groups of tables onto their own databases. In September 2023, it began to split single tables across many databases.
 
 The diagram starts with one server and a database. Evening traffic pushes the server to a note of "CPU 95%". The server is replaced by a bigger one, and the note drops. Then traffic grows again, and 2 more servers appear beside it. The servers share the database, and the last step puts the load note on the database. That shows where the next bottleneck moves.
 
-The quiz checks which kind of scaling fits a given situation, and where the bottleneck moves after scaling out.
+The quiz checks which kind of scaling fits a given situation, where the bottleneck moves after scaling out, and why read replicas did not take the load off Figma's database.
 
 ### 1.4 Availability and failure
 
