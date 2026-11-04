@@ -156,7 +156,7 @@ test("the real curriculum holds the what-system-design-is lesson", () => {
 
   expect(lesson?.track).toBe("foundations")
   expect(lesson?.order).toBe(1)
-  expect(lesson?.minutes).toBe(8)
+  expect(lesson?.minutes).toBe(10)
   expect(lesson?.headings.map((heading) => heading.id)).toEqual([
     "a-one-line-idea-is-not-a-design",
     "the-smallest-real-system",
@@ -166,6 +166,7 @@ test("the real curriculum holds the what-system-design-is lesson", () => {
     "a-method-in-six-steps",
     "when-one-part-fails",
     "no-design-is-best-in-general",
+    "stack-overflow-in-2016",
     "in-a-design-review",
   ])
   expect(lesson?.timeline.steps.map((step) => step.id)).toEqual([
@@ -177,6 +178,7 @@ test("the real curriculum holds the what-system-design-is lesson", () => {
     "https://sre.google/sre-book/service-level-objectives/",
     "https://docs.aws.amazon.com/wellarchitected/latest/framework/welcome.html",
     "https://dataintensive.net/",
+    "https://nickcraver.com/blog/2016/02/17/stack-overflow-the-architecture-2016-edition/",
   ])
 })
 
