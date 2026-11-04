@@ -129,11 +129,11 @@ The quiz checks a chain and a side-by-side availability calculation, how to spot
 
 Slug `consistency-and-partitions`. Builds on 1.4.
 
-Two copies of the data sit in two places, and the network between them breaks. The lesson shows that each copy then has two choices. It can refuse writes and stay correct, or accept writes and risk two different answers. It states the CAP theorem carefully. The choice only exists during a network split. It adds the everyday version of that choice. Even with no split, waiting for every copy to agree costs latency on every write. It gives examples where each choice is right. A bank balance should refuse writes, and a like counter should accept them.
+Two copies of the data sit in two places, and the network between them breaks. The lesson shows that each copy then has two choices. It can refuse writes and stay correct, or accept writes and risk two different answers. It states the CAP theorem carefully. The choice only exists during a network split. It adds the everyday version of that choice. Even with no split, waiting for every copy to agree costs latency on every write. It gives examples where each choice is right. A bank balance should refuse writes, and a like counter should accept them. The case study is Amazon's Dynamo, from its 2007 paper. Its shopping cart accepts every write during a split and merges the versions later, so an added item is never lost, but a deleted item can come back.
 
 The diagram has client A and client B, two database copies, and an internet box between the copies. Writes flow and copy across. The internet box goes down. Client A writes to one copy and client B to the other, and notes show the two copies disagree. The last steps play both outcomes. In one, a copy rejects the write with an error. In the other, both accept the write and the copies reconcile when the link returns.
 
-The quiz checks which choice fits a given product, and that CAP only forces a choice during a split.
+The quiz checks which choice fits a given product, that CAP only forces a choice during a split, what waiting for the other copy costs on a normal day, and what Dynamo's cart merge can bring back.
 
 ## Chapter 2. Back of the envelope
 
