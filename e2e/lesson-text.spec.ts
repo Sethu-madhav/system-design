@@ -6,7 +6,7 @@ test("home lists the Edge track with the Load balancer card", async ({ page }) =
   await expect(track.getByRole("heading", { level: 2, name: "Edge and traffic" })).toBeVisible()
   const card = track.locator('[data-testid="lesson-card"][data-slug="load-balancer"]')
   await expect(card).toContainText("Load balancer")
-  await expect(card).toContainText("9 min")
+  await expect(card).toContainText("11 min")
 })
 
 test("clicking the card opens #/learn/load-balancer", async ({ page }) => {
@@ -28,7 +28,7 @@ test("the lesson has no attribution section and lists the primer under further r
   await expect(page.getByRole("heading", { level: 2, name: "Attribution" })).toHaveCount(0)
   await expect(page.locator('a[href="https://creativecommons.org/licenses/by/4.0/"]')).toHaveCount(0)
   const reading = page.getByTestId("further-reading")
-  await expect(reading.locator("a")).toHaveCount(4)
+  await expect(reading.locator("a")).toHaveCount(5)
   await expect(reading.locator('a[href="https://github.com/donnemartin/system-design-primer#load-balancer"]')).toHaveText("The System Design Primer: load balancer")
 })
 
