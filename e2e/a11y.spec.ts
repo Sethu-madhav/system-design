@@ -85,6 +85,7 @@ test("TOC link scrolls to the section", async ({ page }) => {
     "Adding and removing servers",
     "Sessions and sticky routing",
     "When the balancer fails",
+    "How Dropbox balances its requests",
     "In a design review",
   ])
   await toc.getByRole("link", { name: "Choosing a server" }).click()

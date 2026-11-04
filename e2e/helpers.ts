@@ -12,7 +12,7 @@ export const CORRECT: readonly QuizAnswer[] = [
   { checks: ["Servers keep no per-user session in memory", "Sessions live in a shared store"] },
   { checks: ["Load can become uneven, because users stay on the server they started on", "Users on a server that dies lose their session"] },
   { radio: "Stop sending it new requests and let it finish the open ones" },
-  { radio: "It fails or times out, unless the balancer retries it on another server" },
+  { radio: "A server that fails fast looks idle, so it would draw more requests to fail" },
   { order: "solved" },
 ]
 

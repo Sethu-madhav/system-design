@@ -127,7 +127,7 @@ test("the real curriculum holds the load-balancer lesson", () => {
 
   expect(curriculum.tracks.map((track) => track.id)).toEqual(["foundations", "edge"])
   expect(lesson?.order).toBe(2)
-  expect(lesson?.minutes).toBe(9)
+  expect(lesson?.minutes).toBe(11)
   expect(lesson?.headings.map((heading) => heading.id)).toEqual([
     "one-server-is-not-enough",
     "what-happens-to-one-request",
@@ -137,6 +137,7 @@ test("the real curriculum holds the load-balancer lesson", () => {
     "adding-and-removing-servers",
     "sessions-and-sticky-routing",
     "when-the-balancer-fails",
+    "how-dropbox-balances-its-requests",
     "in-a-design-review",
   ])
   expect(lesson?.timeline.steps.map((step) => step.id)).toEqual([
@@ -148,6 +149,7 @@ test("the real curriculum holds the load-balancer lesson", () => {
     "https://nginx.org/en/docs/http/load_balancing.html",
     "https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/outlier",
     "https://www.eecs.harvard.edu/~michaelm/postscripts/mythesis.pdf",
+    "https://dropbox.tech/infrastructure/enhancing-bandaid-load-balancing-at-dropbox-by-leveraging-real-time-backend-server-load-information",
   ])
 })
 
