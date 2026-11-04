@@ -40,7 +40,7 @@ function LessonNav({ onNavigate }: { onNavigate?: () => void }) {
                 const mark = STATUS_MARK[lessonStatus]
                 return (
                   <SidebarMenuItem key={lesson.slug}>
-                    <SidebarMenuButton asChild isActive={route.name === "lesson" && route.slug === lesson.slug}>
+                    <SidebarMenuButton asChild className="h-auto min-h-8" isActive={route.name === "lesson" && route.slug === lesson.slug}>
                       <a href={href({ name: "lesson", slug: lesson.slug })} onClick={onNavigate}>
                         {lesson.title}
                         <span data-testid="lesson-status" data-slug={lesson.slug} data-status={lessonStatus} className="ms-auto">
