@@ -46,7 +46,7 @@ Run each one 3 times. Send output to a log file and print only the summary lines
 
 - `pnpm build > /tmp/b.log 2>&1; grep -E "Tests +[0-9]+|error" /tmp/b.log`. The content step runs 75 tests.
 - `pnpm test > /tmp/t.log 2>&1; grep -E "Test Files|Tests +[0-9]" /tmp/t.log`. 193 tests in 14 files.
-- `until [ -z "$(lsof -ti :4173 -ti :4174)" ]; do sleep 3; done; pnpm e2e > /tmp/e.log 2>&1; grep -E "✘|^ +[0-9]+ (passed|failed)|already in use|already used" /tmp/e.log`. 55 tests.
+- `until [ -z "$(lsof -ti :4173 -ti :4174)" ]; do sleep 3; done; pnpm e2e > /tmp/e.log 2>&1; grep -E "✘|^ +[0-9]+ (passed|failed)|already in use|already used" /tmp/e.log`. 56 tests. Step 21 brought main to 55, and this step adds 1.
 
 Other sessions on this machine sometimes use ports 4173 and 4174. If an e2e run prints "already in use" or "already used", or its failures are `ERR_CONNECTION_REFUSED`, that run does not count. Run it again. Report every run.
 
@@ -65,7 +65,7 @@ failures: <each failing test name and its first Error line, or none>
 ## Checks Opus ran on the prototype
 
 - Without the `className`, the new test fails. The "What system design is" text ends at 160 px and its row at 152 px.
-- With it, build passed 75, unit 193 in 14 files, and e2e 55, 3 runs each with no assertion failures. Two other runs died from port conflicts with `ERR_CONNECTION_REFUSED`.
+- With it, build passed 75, unit 193 in 14 files, and e2e 55 on the main before step 21, 3 runs each with no assertion failures. Two other runs died from port conflicts with `ERR_CONNECTION_REFUSED`.
 - The active highlight covers both lines of a two-line row. One-line rows keep their height. The mobile sheet, where titles fit on one line, looks the same as before.
 
 ## What you see
