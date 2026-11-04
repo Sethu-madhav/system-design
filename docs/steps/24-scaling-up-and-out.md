@@ -57,7 +57,7 @@ Run these from the worktree root, in order.
 
 Run each one 3 times. Send output to a log file and print only the summary lines, so the output stays short.
 
-- `pnpm build > /tmp/b.log 2>&1; grep -E "Tests +[0-9]+|error" /tmp/b.log`. The content step runs 79 tests.
+- `pnpm build > /tmp/b.log 2>&1; grep -E "Tests +[0-9]+|error" /tmp/b.log`. The content step runs 80 tests.
 - `pnpm test > /tmp/t.log 2>&1; grep -E "Test Files|Tests +[0-9]" /tmp/t.log`. 198 tests in 14 files.
 - `until [ -z "$(lsof -ti :4173 -ti :4174)" ]; do sleep 3; done; pnpm e2e > /tmp/e.log 2>&1; grep -E "✘|^ +[0-9]+ (passed|failed)|already in use|already used" /tmp/e.log`. Main has 56 tests and this step adds 2, so 58. If step 23 merged first, main has 57 and the count is 59.
 
@@ -80,7 +80,7 @@ failures: <each failing test name and its first Error line, or none>
 - Removing the `db` cue from the text fails the build's content check "every scene step except the first is cued in the text".
 - Moving Server 3 to Server 2's cell fails the build with "two and three share a cell".
 - Changing the Q5 answer in `SCALING_CORRECT` to "About 120%" fails the new quiz.spec test with 7/8.
-- With all of it in place, build passed 79, unit 198 in 14 files and e2e 58, 3 times each.
+- With all of it in place, build passed 80, unit 198 in 14 files and e2e 58, 3 times each.
 - At 390 px wide, the page's `scrollWidth` is 390. The diagram scrolls sideways inside its frame, the same as the load balancer lesson.
 
 ## Originality
