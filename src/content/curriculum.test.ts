@@ -210,6 +210,35 @@ test("the real curriculum holds the latency-and-throughput lesson", () => {
   ])
 })
 
+test("the real curriculum holds the scaling-up-and-out lesson", () => {
+  const lesson = curriculum.bySlug.get("scaling-up-and-out")
+
+  expect(lesson?.track).toBe("foundations")
+  expect(lesson?.order).toBe(3)
+  expect(lesson?.minutes).toBe(7)
+  expect(lesson?.headings.map((heading) => heading.id)).toEqual([
+    "slow-every-evening",
+    "slow-for-one-user-or-slow-for-many",
+    "scaling-up",
+    "scaling-out",
+    "what-makes-scaling-out-hard",
+    "when-a-server-fails",
+    "the-bottleneck-moves",
+    "in-a-design-review",
+  ])
+  expect(lesson?.timeline.steps.map((step) => step.id)).toEqual([
+    "arrive", "peak", "up", "grow", "out", "spread", "lost", "shared", "db",
+  ])
+  expect(lesson?.quiz).toHaveLength(8)
+  expect(lesson?.sources.map((source) => source.url)).toEqual([
+    "https://github.com/donnemartin/system-design-primer#performance-vs-scalability",
+    "https://www.allthingsdistributed.com/2006/03/a_word_on_scalability.html",
+    "https://12factor.net/processes",
+    "https://docs.aws.amazon.com/wellarchitected/latest/reliability-pillar/rel_mitigate_interaction_failure_stateless.html",
+    "https://learn.microsoft.com/en-us/azure/architecture/best-practices/auto-scaling",
+  ])
+})
+
 test("TRACKS lists the 12 chapters in reading order", () => {
   expect(TRACKS.map((track) => track.id)).toEqual([
     "foundations", "estimation", "network", "edge", "application", "data",
