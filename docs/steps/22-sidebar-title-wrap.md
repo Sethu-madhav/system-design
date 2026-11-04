@@ -1,4 +1,4 @@
-# Step 21. Fix the sidebar title wrap
+# Step 22. Fix the sidebar title wrap
 
 ## Why
 
@@ -10,7 +10,7 @@ This step lets a row grow to fit its title and adds a test that fails when a wra
 
 ## Branch and coder rules
 
-- Branch `step/21-sidebar-title-wrap` from `origin/main`.
+- Branch `step/22-sidebar-title-wrap` from `origin/main`.
 - Use `pnpm` only. Never `npm`, `npx`, `yarn` or `bun`.
 - Touch only the 2 files in Appendix A. Do not edit, open or read any other file. That includes `src/components/ui`, `src/lib/ink`, `vendor`, `node_modules` and `dist`.
 - Do not explore the repo. Every command you need is below.
@@ -35,9 +35,9 @@ It measures the text, not `scrollHeight`. Each row's rule is an `::after` line p
 Run these from the worktree root, in order.
 
 1. Apply the patch.
-   `awk '/^````diff$/{p=1;next} /^````$/{p=0} p' docs/steps/21-sidebar-title-wrap.md > /tmp/step21.diff && git apply /tmp/step21.diff && git status --short`
+   `awk '/^````diff$/{p=1;next} /^````$/{p=0} p' docs/steps/22-sidebar-title-wrap.md > /tmp/step22.diff && git apply /tmp/step22.diff && git status --short`
    The status must list exactly `M src/app/Shell.tsx` and `?? e2e/sidebar-wrap.spec.ts`.
-2. Install. `pnpm install > /tmp/install21.log 2>&1; tail -3 /tmp/install21.log`
+2. Install. `pnpm install > /tmp/install22.log 2>&1; tail -3 /tmp/install22.log`
 3. Run the commands in the next section.
 
 ## Commands that must pass
