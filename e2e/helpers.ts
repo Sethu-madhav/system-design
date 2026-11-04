@@ -44,7 +44,7 @@ export const SCALING_CORRECT: readonly QuizAnswer[] = [
   { radio: "Any server can answer any request, because user data lives outside the servers" },
   { radio: "The database that all 3 servers share" },
   { radio: "About 90%" },
-  { radio: "The main database, which takes every write" },
+  { radio: "Every write still went to the one main database" },
   { radio: "Run at least 2 servers behind a load balancer" },
   { order: "solved" },
 ]
