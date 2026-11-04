@@ -86,3 +86,18 @@ test("what-system-design-is shows 8 cues, 'dies' crosses out the database and 'b
   await expect(db).not.toHaveAttribute("data-down", "")
   await expect(db.getByTestId("scene-note")).toHaveText("runs out first")
 })
+
+test("latency-and-throughput shows 9 cues, 'wait' notes the queue wait and 'shed' marks the queue full", async ({ page }) => {
+  const lesson = "/#/learn/latency-and-throughput"
+  await gotoReady(page, lesson)
+  await expect(page.getByRole("heading", { level: 2, name: "Fast at noon, slow at night" })).toBeVisible()
+  await expect(page.locator('[data-testid="prose"] [data-cue]')).toHaveCount(9)
+  const scene = page.getByTestId("scene")
+  const queue = scene.locator('[data-scene-node="queue"]')
+  await expect(scene.locator('[data-scene-node][data-visible="true"]')).toHaveCount(3)
+  await expect(page.getByText("Step 1 of 9")).toBeVisible()
+  await gotoReady(page, `${lesson}/step/wait`)
+  await expect(queue.getByTestId("scene-note")).toHaveText("wait 90 ms")
+  await gotoReady(page, `${lesson}/step/shed`)
+  await expect(queue.getByTestId("scene-note")).toHaveText("full")
+})

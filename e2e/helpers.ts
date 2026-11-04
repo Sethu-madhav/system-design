@@ -27,6 +27,17 @@ export const SYSTEM_DESIGN_CORRECT: readonly QuizAnswer[] = [
   { order: "solved" },
 ]
 
+export const LATENCY_CORRECT: readonly QuizAnswer[] = [
+  { radio: "Add an index so the feed query reads less data" },
+  { radio: "1 in 100 feed loads takes 2 s or longer" },
+  { radio: "The p99 latency" },
+  { radio: "About 40%" },
+  { radio: "It becomes many times longer than it is now" },
+  { radio: "400" },
+  { radio: "Limit the queue, and send a fast error when it is full" },
+  { radio: "Analytics events that nobody waits on" },
+]
+
 export async function solveOrder(page: Page) {
   const read = () => page.locator('[data-testid="quiz-order"] li').evaluateAll((rows) =>
     rows.map((row) => Number(row.getAttribute("data-item"))),
