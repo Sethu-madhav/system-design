@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react"
 import { href, useRoute } from "@/app/routes"
 import { SearchPalette } from "@/app/SearchPalette"
+import { ThemeToggle } from "@/app/ThemeToggle"
 import { curriculum } from "@/content"
 import { Paper } from "@/components/ui/paper"
 import { Icon } from "@/components/ui/icon"
@@ -84,7 +85,10 @@ export function Shell({ children }: { children: ReactNode }) {
             System design
           </a>
         </div>
-        <SearchPalette />
+        <div className="flex items-center gap-2">
+          <SearchPalette />
+          <ThemeToggle />
+        </div>
       </header>
       <div className="mx-auto flex max-w-6xl flex-col gap-6 overflow-x-clip px-4 pb-12 md:grid md:grid-cols-[14rem_1fr] md:px-8">
         <aside data-testid="sidebar" aria-label="Lessons" className="hidden md:block">
