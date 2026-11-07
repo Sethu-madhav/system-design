@@ -153,9 +153,11 @@ The lesson gives the few numbers a designer uses again and again, and the reason
 
 Three rules follow from these numbers. Memory is about a thousand times faster than an SSD. Network round trips usually decide a request's latency. Distance costs time that no hardware can remove.
 
+The case study is Facebook's memcache, from the 2013 paper "Scaling memcache at Facebook". One popular page fetched 521 items from the cache on average, and one cache request took 333 µs at the median. Facebook fetched items that did not depend on each other at the same time, in batches of 24 keys on average, and put web servers in regions closer to users.
+
 The diagram has a server, a cache in memory, a database on SSD, and storage in another region. The server reads from each in turn, and a note gives each read's rough time.
 
-The quiz checks the order of these numbers, and which fix helps a slow page made of many round trips.
+The quiz checks the order of these numbers, which fix helps a slow page made of many round trips, what a trip between continents costs, how big a set of profiles is, why Facebook batched its cache reads and how long a cache timeout should be.
 
 ### 2.2 Estimating traffic
 
