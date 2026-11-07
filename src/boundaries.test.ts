@@ -8,7 +8,7 @@ interface FileText {
   readonly text: string
 }
 
-const MODULES = ["content", "scene", "progress", "search"] as const
+const MODULES = ["content", "scene", "progress", "search", "theme"] as const
 type ModuleName = (typeof MODULES)[number]
 
 function moduleOf(target: string): ModuleName | undefined {
