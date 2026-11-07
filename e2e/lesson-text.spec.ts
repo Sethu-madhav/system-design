@@ -3,7 +3,7 @@ import { expect, gotoReady, test } from "./fixtures"
 test("home lists the Edge track with the Load balancer card", async ({ page }) => {
   await gotoReady(page, "/")
   const track = page.locator('[data-testid="track"][data-track="edge"]')
-  await expect(track.getByRole("heading", { level: 2, name: "Edge and traffic" })).toBeVisible()
+  await expect(track.getByRole("heading", { level: 3, name: "Edge and traffic" })).toBeVisible()
   const card = track.locator('[data-testid="lesson-card"][data-slug="load-balancer"]')
   await expect(card).toContainText("Load balancer")
   await expect(card).toContainText("11 min")
