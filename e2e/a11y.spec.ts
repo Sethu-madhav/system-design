@@ -1,22 +1,26 @@
 import AxeBuilder from "@axe-core/playwright"
 import { expect, gotoReady, test } from "./fixtures"
 
-test("axe finds no serious violations on home and lesson", async ({ page }) => {
-  const violations: string[] = []
-  for (const size of [{ width: 1280, height: 720 }, { width: 390, height: 844 }]) {
-    for (const path of ["/#/", "/#/learn/load-balancer"]) {
-      await page.setViewportSize(size)
-      await gotoReady(page, path)
-      const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze()
-      for (const violation of results.violations) {
-        if (violation.impact === "serious" || violation.impact === "critical") {
-          violations.push(`${size.width}x${size.height} ${path} ${violation.id}`)
+for (const theme of ["light", "dark"] as const) {
+  test(`axe finds no serious violations on home and lesson in the ${theme} theme`, async ({ page }) => {
+    await page.addInitScript((value) => localStorage.setItem("theme", value), theme)
+    const violations: string[] = []
+    for (const size of [{ width: 1280, height: 720 }, { width: 390, height: 844 }]) {
+      for (const path of ["/#/", "/#/learn/load-balancer"]) {
+        await page.setViewportSize(size)
+        await gotoReady(page, path)
+        await expect(page.locator("html")).toHaveClass(new RegExp(`\\b${theme}\\b`))
+        const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze()
+        for (const violation of results.violations) {
+          if (violation.impact === "serious" || violation.impact === "critical") {
+            violations.push(`${theme} ${size.width}x${size.height} ${path} ${violation.id}`)
+          }
         }
       }
     }
-  }
-  expect(violations).toEqual([])
-})
+    expect(violations).toEqual([])
+  })
+}
 
 test("at 390x844 the sidebar opens from a menu button and the stage fits without horizontal page scroll", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
