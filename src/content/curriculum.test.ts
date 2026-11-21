@@ -158,7 +158,7 @@ test("the real curriculum holds the what-system-design-is lesson", () => {
 
   expect(lesson?.track).toBe("foundations")
   expect(lesson?.order).toBe(1)
-  expect(lesson?.minutes).toBe(10)
+  expect(lesson?.minutes).toBe(12)
   expect(lesson?.headings.map((heading) => heading.id)).toEqual([
     "a-one-line-idea-is-not-a-design",
     "the-smallest-real-system",
