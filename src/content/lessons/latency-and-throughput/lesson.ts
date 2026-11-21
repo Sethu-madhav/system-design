@@ -112,13 +112,12 @@ export default defineLesson({
 
     Imagine a small photo app running on a single feed server. At noon, when
     traffic is calm, the server answers a feed request in about 10 ms. By 9 pm,
-    that exact same request can take a full second. Nobody shipped new code,
+    that same request can take a full second. Nobody shipped new code,
     and no machine crashed. The server is just busier, and once a server gets
     close to full, requests spend most of their time waiting in line before
     work on them even starts.
 
-    This lesson explains why that wait happens and how to reason about it
-    calmly. We only need two core measures, latency and throughput, along with
+    This lesson explains why that wait happens and how to reason about it. We only need two core measures, latency and throughput, along with
     a clear mental model of how requests queue up. Near the end, we look at
     real numbers Google published about what happens when one user request has
     to wait on dozens of servers. Every later lesson on scaling, caching, and
@@ -143,7 +142,7 @@ export default defineLesson({
 
     It helps to keep the two questions separate. Latency tells you how long
     one person waits. Throughput tells you how many people the system can
-    serve at the same time. A design can do well on one and struggle on the
+    serve each second. A design can do well on one and struggle on the
     other.
 
     ## Improving one does not always improve the other
@@ -170,7 +169,7 @@ export default defineLesson({
     ## Averages hide the slow requests
 
     A busy server answers thousands of requests every minute, and they never
-    all take the exact same time. Most of our feed requests finish in 10 ms.
+    all take the same time. Most of our feed requests finish in 10 ms.
     ${cue("slow", "A small fraction take much longer")}, perhaps because the
     server pauses for garbage collection or because a read misses the cache
     and hits disk. If you blend all of those times into one average, a handful
@@ -179,7 +178,7 @@ export default defineLesson({
     Percentiles give you a clearer picture of the spread. Imagine sorting one
     minute of request times from fastest to slowest. The p50, also called the
     median, sits halfway down the list. Half the requests finished faster than
-    that number, so the p50 shows the wait for a typical load. The p99 sits
+    that number, so the p50 shows the wait for a typical user. The p99 sits
     99% of the way down. One request in every 100 took longer than the p99, so
     it reveals the wait for your slowest users. In real apps, those slow
     requests often belong to your most active users, because they follow the
@@ -213,9 +212,8 @@ export default defineLesson({
 
     ## Why the queue grows
 
-    Even on a single server, latency climbs when traffic rises. Think of a
-    quiet coffee counter with one barista. Customers do not walk through the
-    door spaced like clockwork. Even if 90 requests arrive over an average
+    Even on a single server, latency climbs when traffic rises. Requests do not arrive spaced like
+    clockwork. Even if 90 requests arrive over an average
     second, some moments bring 3 requests at once while the next few
     milliseconds stay empty. Any request that shows up while the server is
     busy has to wait in a queue.
@@ -240,7 +238,7 @@ export default defineLesson({
     again. That steep bend explains our feed server from the opening story,
     fast at noon and slow at 9 pm with no code changes at all.
 
-    > note: Real servers have multiple cores and more complex traffic than this simple model, yet the curve bends in the exact same way. Most teams size servers to sit around 60% to 70% busy at peak load so normal traffic bursts stay out of the steep part of the curve.
+    > note: Real servers have multiple cores and more complex traffic than this simple model, yet the curve bends the same way. Most teams size servers to sit around 60% to 70% busy at peak load so normal traffic bursts stay out of the steep part of the curve.
 
     ## Little's law
 
@@ -270,10 +268,10 @@ export default defineLesson({
     ${cue("full", "Once more than 100 requests arrive each second")}, the
     server still completes 100, and every extra request joins the back of the
     queue. As long as arrivals stay above capacity, the line grows longer
-    every single second, and the wait grows with it.
+    every second, and the wait grows with it.
 
     From the user's side, the feed spinner turns until the app gives up with a
-    timeout. Two quiet feedback loops make overload even harder to recover
+    timeout. Two feedback loops make overload even harder to recover
     from. First, requests that already timed out on the phone often stay in
     the queue, so the server wastes 10 ms producing answers that nobody will
     ever read. Second, frustrated users and automatic client retries send even
@@ -294,7 +292,7 @@ export default defineLesson({
     published a paper called "The tail at scale." Google's services answer
     queries by reading data spread across thousands of machines, so a single
     user action can wait on many servers at once. At that scale, tail latency
-    stops being an edge case and becomes the everyday norm.
+    stops being rare and becomes normal.
 
     The paper opens with a clean example. Imagine a server that answers in
     10 ms most of the time, with 1 request in 100 taking a full second. If a
@@ -311,7 +309,7 @@ export default defineLesson({
     The slowest 5% of leaf servers accounted for half of the total p99 time.
 
     Those slow leaves were rarely slow because the request itself was hard.
-    The paper points to temporary noise that comes and goes on real machines,
+    The paper points to short-lived causes on real machines,
     such as other programs sharing the host, background jobs, garbage
     collection pauses, and short queues. Because the slowdown is tied to that
     one machine at that one moment, sending a hedged copy of the read to a
@@ -327,8 +325,7 @@ export default defineLesson({
 
     ## In a design review
 
-    A few calm questions bring latency and throughput trade-offs into focus
-    during any design review.
+    Ask these questions about latency and throughput in any design review.
 
     1. What is our latency target, and which percentile are we measuring?
     2. What peak throughput do we expect, and what is the real capacity of each component?
