@@ -66,13 +66,14 @@ export function LessonPage({ route }: { route: LessonRoute }) {
         <div className="lg:col-span-2"><ScenePlayer /></div>
         <nav data-testid="toc" aria-label="On this page" className="hidden self-start lg:sticky lg:top-6 lg:col-start-2 lg:row-start-3 lg:block">
           <p className="font-hand text-base text-pencil-text">On this page</p>
-          <ul className="space-y-1 font-hand">
-            {lesson.headings.map((heading) => (
-              <li key={heading.id} className={heading.level === 3 ? "ps-4" : undefined}>
+          <ol className="space-y-1 font-hand">
+            {tocNumbers(lesson.headings).map(({ heading, number }) => (
+              <li key={heading.id} className={heading.level === 3 ? "flex gap-2 ps-4" : "flex gap-2"}>
+                <span aria-hidden="true" className="min-w-[3ch] shrink-0 text-end tabular-nums text-pencil-text">{number}</span>
                 <a data-toc={heading.id} href={href({ name: "lesson", slug: lesson.slug, section: heading.id })} className={TOC_LINK_CLASS}>{blockText(heading)}</a>
               </li>
             ))}
-          </ul>
+          </ol>
         </nav>
         <div className="min-w-0 space-y-8 lg:col-start-1 lg:row-start-3">
           <ProseView prose={lesson.body} />
@@ -91,4 +92,18 @@ export function LessonPage({ route }: { route: LessonRoute }) {
       </div>
     </SceneProvider>
   )
+}
+
+function tocNumbers<H extends { level: number }>(headings: readonly H[]) {
+  let section = 0
+  let sub = 0
+  return headings.map((heading) => {
+    if (heading.level === 3) {
+      sub += 1
+      return { heading, number: `${section}.${sub}` }
+    }
+    section += 1
+    sub = 0
+    return { heading, number: `${section}.` }
+  })
 }
