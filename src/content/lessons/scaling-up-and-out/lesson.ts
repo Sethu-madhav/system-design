@@ -9,30 +9,30 @@ const scene = defineScene({
   db: { kind: "db", label: "Database", at: [6, 1] },
 }).steps((s) => ({
   arrive: s.step(
-    "A small photo app runs on one server and one database. The server reads the feed from the database and sends it back.",
+    "Our small photo app starts on one app server and one database. The server reads the feed from the database and sends it back.",
     s.send("phone", "one", "GET /feed"),
     s.send("one", "db", "SELECT"),
     s.send("db", "one", "rows", "data"),
     s.send("one", "phone", "200", "response"),
   ),
   peak: s.step(
-    "At the evening peak, the server's CPU reaches 95%, and feeds load slowly.",
+    "During the evening rush, the server reaches 95% CPU, and feeds take seconds to load.",
     s.parallel(s.send("phone", "one", "GET /feed"), s.send("phone", "one", "GET /feed")),
     s.focus("one"),
     s.note("one", "CPU 95%"),
   ),
   up: s.step(
-    "The team moves the app to a machine with 4 times the cores. The same load now uses about a quarter of it.",
+    "The team moves the app onto a machine with 4 times as many cores, so the same evening traffic uses about a quarter of it.",
     s.focus("one"),
     s.note("one", "4x cores, CPU 25%"),
   ),
   grow: s.step(
-    "A year later, traffic is 4 times higher, and the big machine is back at 95%. The next size up is the largest one sold.",
+    "A year later, traffic has grown 4 times larger, and the bigger machine is back at 95% CPU. The next step up is the largest machine sold.",
     s.parallel(s.send("phone", "one", "GET /feed"), s.send("phone", "one", "GET /feed")),
     s.note("one", "CPU 95% again"),
   ),
   out: s.step(
-    "Two more servers start beside it, and a load balancer in front splits the requests between all three.",
+    "Two more servers join beside it, and a load balancer in front spreads incoming requests across all three.",
     s.show("lb"),
     s.show("two"),
     s.show("three"),
@@ -40,12 +40,12 @@ const scene = defineScene({
     s.send("lb", "two", "GET /feed"),
   ),
   spread: s.step(
-    "Each server gets about a third of the requests and runs at about 32%.",
+    "Each server now receives about a third of the traffic and sits near 32% CPU.",
     s.parallel(s.send("lb", "one", "GET /feed"), s.send("lb", "two", "GET /feed"), s.send("lb", "three", "GET /feed")),
     s.note("lb", "a third each"),
   ),
   lost: s.step(
-    "A user signed in on Server 1, which kept the session in its memory. The next request lands on Server 3, which has no record of it.",
+    "A user signed in on Server 1, which stored the session in local memory. The next request lands on Server 3, which has never seen that session.",
     s.send("phone", "lb", "GET /feed"),
     s.send("lb", "three", "GET /feed"),
     s.note("three", "who is this?"),
@@ -53,12 +53,12 @@ const scene = defineScene({
     s.send("lb", "phone", "401", "error"),
   ),
   shared: s.step(
-    "The servers stop keeping user data in memory. Sessions live in the database, so any server can answer any request.",
+    "The servers stop holding user sessions in memory. Sessions move to the shared database, so any server can handle any user.",
     s.parallel(s.send("one", "db", "SELECT"), s.send("two", "db", "SELECT"), s.send("three", "db", "SELECT")),
     s.note("db", "sessions here"),
   ),
   db: s.step(
-    "All three servers use the one database. It took the whole 4 times growth, and its CPU is now at 90%.",
+    "All three servers still talk to one shared database. It absorbed the full 4x traffic growth, and its CPU is now at 90%.",
     s.focus("db"),
     s.note("db", "CPU 90%"),
   ),
@@ -66,7 +66,7 @@ const scene = defineScene({
 
 export default defineLesson({
   title: "Scaling up and scaling out",
-  summary: "When one server is not enough, buy a bigger one or add more. What each costs, why state makes adding servers hard, and where the load goes next.",
+  summary: "When one server fills up, move to a bigger machine or add more. What each path costs, why state makes scaling out hard, and where load goes next.",
   track: "foundations",
   order: 3,
   tags: [
@@ -121,263 +121,286 @@ export default defineLesson({
   body: ({ cue }) => md`
     ## Slow every evening
 
-    ${cue("arrive", "A small photo app started on one server and one database")}. The
-    server runs the app, and the database holds the photos, users and
-    follows. For a year that was enough. Now
-    ${cue("peak", "the server's CPU reaches 95% every evening")}, and the
-    feed takes seconds to load. The previous lesson showed why. A server
-    that busy makes every request wait in its queue.
+    ${cue("arrive", "Our small photo app began on one server and one database")}.
+    The app server runs the application code, and the database stores the
+    photos, user accounts, and follows. For a full year, that quiet setup
+    handled everything without trouble. Then more people joined, and now
+    ${cue("peak", "the server's CPU climbs to 95% every evening")}, and the
+    feed takes seconds to load. From the previous lesson, you already know
+    why. Once a server sits near 100% busy, every new request waits in a
+    growing queue.
 
-    The team has two ways to add capacity. It can move the app to a bigger
-    machine, which is scaling up. Or it can run the app on more machines,
-    which is scaling out. This lesson compares the two and the changes each
-    one needs. Near the end, it looks at how Figma scaled its database.
+    At this point, the team has two ways to add room. They can move the app
+    onto a larger machine, known as scaling up. Or they can run the app on
+    several machines at once, known as scaling out. This lesson walks through
+    both paths, shows what each one asks of your code, and ends with the real
+    story of how Figma scaled its Postgres database over four years of rapid
+    growth.
 
     ## Slow for one user or slow for many
 
-    First, check that more capacity is the fix. Open the feed at 4 am, when
-    almost nobody else is online.
+    Before buying bigger hardware or adding extra machines, take a quiet
+    minute to check whether capacity is even the real issue. Try opening the
+    feed at 4 am, when almost nobody else is using the app.
 
-    - If it is slow even then, the system has a performance problem. One request does too much work, for example a query that reads every photo a user follows. More machines will not help, because each request is still slow on its own. Fix the work.
-    - If it is fast at 4 am and slow at 9 pm, the system has a scalability problem. Each request is fine, but the system cannot serve enough of them at once. More capacity helps.
+    - If the feed is still slow at 4 am, you have a performance problem. One request is doing too much work on its own, such as scanning every photo row in the database without an index. Extra servers will not speed it up, because each single request will remain slow. Fix the work first.
+    - If the feed is fast at 4 am and slows down only at 9 pm, you have a scalability problem. Each request is lean, yet the machine cannot handle so many at the same time. Adding capacity will help.
 
-    The photo app's feed loads in 80 ms at 4 am, so it has a scalability problem.
+    Our photo app loads a feed in 80 ms at 4 am, so the team knows they are
+    dealing with a scalability problem.
 
-    > pitfall: Adding servers to fix a performance problem costs money and changes nothing for the user. Measure one request on a quiet system before you add capacity.
+    > pitfall: Adding servers to solve a performance problem raises your bill without helping the user. Time a single request on a quiet machine before you add hardware.
 
     ## Scaling up
 
-    Scaling up, also called vertical scaling, means a bigger machine with
-    more cores, more memory or faster disks. The code does not change. It
-    runs on one machine, as before.
-    ${cue("up", "The team moves the app to a machine with 4 times the cores")},
-    and the evening load now uses about a quarter of it.
+    Scaling up, also called vertical scaling, means moving your app onto a
+    stronger machine with more CPU cores, more memory, or faster disks. Your
+    code does not have to change at all, because everything still runs inside
+    one box.
+    ${cue("up", "The team moves the photo app to a machine with 4 times the cores")},
+    and the same evening traffic drops from 95% CPU down to about 25%.
 
-    Scaling up is the fastest fix when it is available. It has these limits.
+    When a bigger machine is available, scaling up is the fastest and calmest
+    fix you can make. Still, it comes with four real limits.
 
-    - **Cost.** Within one family of cloud machines, twice the cores costs about twice as much. A bigger machine saves nothing per core.
-    - **A ceiling.** Every family has a largest size. When the app outgrows it, scaling up is over.
-    - **Downtime.** Moving to a bigger machine usually means stopping the app and starting it on the new one. With one machine, users see that restart.
-    - **One machine.** All the work still runs on one machine, so one failure stops everything.
+    - **Cost.** Within one cloud machine family, doubling the cores costs roughly twice as much, and at the very top end specialized hardware can cost even more per core.
+    - **A hardware ceiling.** Every cloud provider and hardware vendor has a largest machine. Once you fill it, vertical scaling stops.
+    - **Restart downtime.** Moving a single server to a larger machine usually requires stopping the app and starting it on the new host, which interrupts anyone using the app at that moment.
+    - **One failure stops everything.** Even the largest server in the world is still one machine. If its power supply or operating system fails, the entire app goes offline.
 
-    The app keeps growing.
-    ${cue("grow", "A year later, traffic is 4 times higher")}, and the big
-    machine is back at 95%. The next size up is the largest one sold, and it
-    would last only a few months.
+    Over the next twelve months, the photo app keeps growing.
+    ${cue("grow", "A year later, evening traffic is 4 times higher")}, and the
+    big machine is back at 95% CPU. The next step up is the largest machine
+    the provider sells, and at this growth rate it would only buy a few more
+    months.
 
     ## Scaling out
 
-    Scaling out, also called horizontal scaling, means more machines that
-    each run the same app.
-    ${cue("out", "Two more servers start, and a load balancer in front splits the requests")}
-    between them. The phone talks only to the load balancer and never learns
-    how many servers there are. Chapter 4 covers load balancers in detail.
+    Scaling out, also called horizontal scaling, takes a different path.
+    Instead of buying one giant server, you run the same app on several
+    machines side by side.
+    ${cue("out", "Two more servers start up, and a load balancer in front splits incoming requests")}
+    between them. The phone only ever talks to the load balancer and has no
+    idea how many servers sit behind it. Chapter 4 takes a closer look at how
+    load balancers work.
 
-    With 3 servers,
-    ${cue("spread", "each one gets about a third of the requests")} and runs
-    at about 32%. When traffic grows again, the team adds a fourth server
-    without stopping the other three. An autoscaling rule can do this on its
-    own. It adds a server when the average CPU passes a mark such as 70%,
-    and removes one when the load falls at night.
+    With 3 equal servers sharing the traffic,
+    ${cue("spread", "each server receives about a third of the requests")}
+    and settles near 32% CPU. When traffic grows again next season, the team
+    can add a fourth server without restarting the other three. An autoscaling
+    rule can do this on its own. It launches a new machine whenever average
+    CPU crosses a mark like 70%, so the new server boots before queues grow,
+    and turns spare machines off during quiet overnight hours.
 
-    Scaling out has these costs.
+    Horizontal scaling supports much higher growth, though it adds three
+    ongoing responsibilities.
 
-    - More machines to deploy, watch and update.
-    - A load balancer, which is one more part that can fail.
-    - Servers that must not keep anything a later request needs, which the next section explains.
+    - More servers to deploy, monitor, and keep up to date.
+    - A load balancer in front, which is a new piece that needs its own backup.
+    - Application code that no longer relies on local memory or local disk between requests.
 
     ## What makes scaling out hard
 
-    Data that a server keeps between requests is called state. Before
-    scaling out, the app's server kept each signed-in user's session in its
-    own memory. With one server, that worked. With three, it breaks.
-    ${cue("lost", "A user signs in on Server 1, and the next request lands on Server 3")},
-    which has no record of the session. The user is asked to sign in again,
-    on every request that goes to a different server.
+    Any information a server holds between requests is called state. Back when
+    the photo app ran on one server, keeping each signed-in user's session in
+    the server's memory worked fine, because every request returned to that
+    same machine. With three servers, that assumption breaks right away.
+    ${cue("lost", "A user signs in on Server 1, and their next request lands on Server 3")},
+    which has no record of who they are. The app logs the person out whenever
+    the load balancer picks a different server.
 
-    The fix is to make the servers stateless. A stateless server keeps
-    nothing between requests that another server would need.
-    ${cue("shared", "Sessions move to the database")}, or to a shared cache,
-    and uploaded photos go to shared storage instead of a server's local
-    disk. Then any server can answer any request, and a server can be added
-    or removed at any time.
+    The clean fix is to make your app servers stateless. A stateless server
+    keeps nothing on itself between requests that another server would need.
+    ${cue("shared", "Sessions move out to the shared database")}, or to a
+    shared cache like Redis, and uploaded photos go straight to shared object
+    storage instead of a local disk. Once the servers hold no private state,
+    any server can answer any user, and you can add, restart, or remove
+    machines at any time.
 
-    > tradeoff: A load balancer can send each user back to the server that holds the session, which is called sticky routing. It avoids changing the code, but load becomes uneven, and the sessions on a server are lost when it fails. Moving state out of the servers costs more work once and removes both problems.
+    > tradeoff: A load balancer can pin each user to the same server using sticky routing. That avoids touching your code right away, yet load spreads unevenly across machines, and everyone on a server loses their session if that server crashes. Moving state out of the app servers takes one stretch of work up front and avoids both headaches.
 
-    Not every part can be stateless. The database is state, by definition.
-    Its job is to keep the data. That is why databases are the hardest part
-    to scale out, and why chapter 6 is about them.
+    Of course, not every box in your diagram can be stateless. By definition,
+    the database is where state lives. Its entire job is to hold onto your
+    data and keep it safe. That is why scaling out a database is far harder
+    than scaling out app servers, and why all of chapter 6 focuses on data.
 
     ## When a server fails
 
-    One server is a single point of failure. When it crashes, or restarts
-    for an update, the app is down, however big the machine is.
+    A single server is always a single point of failure. No matter how many
+    cores you buy, if that one machine crashes or reboots for a security
+    patch, every user sees an outage.
 
-    With 3 servers, the load balancer stops sending requests to the failed
-    one, and the other two carry the load. Each was at 32%, so each now runs
-    at about 48%. Users notice nothing.
+    With 3 servers behind a load balancer, losing one machine becomes a
+    routine event. The load balancer stops sending traffic to the broken host,
+    and the remaining two servers pick up its share. Each server was at 32%
+    CPU, so each climbs to about 48%, and nobody using the app notices a
+    thing.
 
-    That works only if the servers that remain have room for the extra load.
-    If each of the 3 ran at 80%, the 2 survivors would each need 120%. They
-    would overload, and their queues would grow until requests time out. So
-    size the servers so that all but one can carry the peak. With 3
-    servers, keep each below about 60% at the peak.
+    That calm failover only works when the surviving servers have spare room.
+    Imagine all 3 servers running at 80% CPU during the evening peak. The
+    total load is 240%. If one machine goes down, the 2 survivors each need
+    120% capacity, so both overload and time out. Plan your fleet so that all
+    servers minus one can still carry peak traffic. With 3 servers, keeping
+    each below 60% at peak means 2 survivors land near 90% if one fails, tight
+    enough to build queues yet still able to stay up, and keeping even more
+    headroom keeps latency calm during a failure.
 
     ## The bottleneck moves
 
-    Scaling out the servers does not scale what they share. Every request
-    still reads from the one database, and it took the whole 4 times growth
-    in traffic.
-    ${cue("db", "Its CPU is now at 90%")}, so it is the next bottleneck. The
-    servers will wait on it the same way users waited on the one server.
+    Adding app servers does not add any capacity to the parts those servers
+    share. Every request from all three machines still queries the same single
+    database, which absorbed the entire 4x rise in traffic on its own.
+    ${cue("db", "Now the database CPU sits at 90%")}, so the bottleneck has
+    moved one step downstream. Soon the app servers will sit waiting on the
+    database the same way phones once waited on the single app server.
 
-    This is the normal pattern. Fixing one bottleneck moves the load to the
-    next part in line. After the servers come the database, the cache and
-    the network. Write down the next bottleneck in the design before traffic
-    reaches it.
-    For the photo app, the next steps are a cache in front of the database for
-    feed reads, and copies of the database that serve reads.
+    Expect this in every growing system. Removing one bottleneck shifts the
+    pressure onto the next piece in the chain, from app servers to the
+    database, then to the cache or the network. A good habit is to name the
+    next bottleneck in your notes before traffic gets there. For our photo
+    app, the next relief comes from putting a cache in front of the database
+    for popular feeds and adding read copies of the database.
 
     ## How Figma scaled its database
 
-    Figma is a design tool that many people can edit at once in the
-    browser. In 2023 and 2024, its engineers wrote two posts about how its
-    database grew. It follows the same steps as this lesson, at a much
-    larger scale.
+    Figma is a browser-based design tool where teams edit the same files
+    together in real time. In 2023 and 2024, Figma's engineers published two
+    posts tracing how their database grew. Their journey follows the exact
+    sequence in this lesson, only at a much larger scale.
 
-    In 2020, Figma kept most of its metadata, such as permissions, file
-    information and comments, in one Postgres database on Amazon RDS. Its
-    database traffic grew about 3 times every year. At the peak, the
-    database's CPU passed 65%. That was far from full, but latency gets
-    harder to predict as a database nears its limit. If the database filled
-    up, Figma would stop working.
+    In 2020, Figma stored most of its metadata, such as permissions, file
+    details, and comments, inside a single Postgres database on Amazon RDS.
+    Their database traffic grew roughly 3 times every year. At peak hours, CPU
+    on that database passed 65%. That sounds like plenty of margin on paper,
+    yet database latency grows unpredictable as load creeps toward the limit,
+    and saturating that one database would have stopped Figma for everyone.
 
-    The team's first fixes were meant to buy about a year.
+    To buy roughly a year of breathing room, the team applied four quick fixes
+    first.
 
-    - It scaled up. It moved the database to the largest machine Amazon offered.
-    - It added read replicas, which are copies of the database that answer reads.
-    - It put new features on new databases, so the main one grew more slowly.
-    - It added a connection pooler, because the connections to the database were in the thousands.
+    - They scaled up, moving Postgres onto the largest machine Amazon offered.
+    - They added read replicas, copies of the database that answer read queries.
+    - They placed new product features onto separate databases so the main database grew slower.
+    - They introduced a connection pooler, because thousands of app servers were holding open database connections.
 
-    That was the ceiling for scaling up, because no bigger machine was
-    available. The replicas had limits too. Writes were a large part
-    of the load, and a replica takes only reads. Some reads could not move
-    either. A replica lags a little behind the main database, and parts of
-    the app needed the latest data.
+    Soon they hit the ceiling of vertical scaling because no larger machine
+    existed. Read replicas had limits too. Writes made up a large share of
+    database load, and replicas only take reads. On top of that, replicas lag
+    slightly behind the main database, so parts of Figma that needed the
+    freshest rows could not read from them.
 
-    So Figma scaled the database out. Its app already ran on thousands of
-    servers. The database was the one part that still ran on one machine.
-    The team moved groups of related tables, such as the ones for files or
-    for organizations, onto databases of their own. Each move paused
-    traffic to those tables for a short time, and for about 30 seconds
-    about 2% of requests were dropped. By the end of 2022, Figma ran about
-    a dozen of these databases. In April 2023, the largest one ran at about
-    10% CPU.
+    That left one option, scaling the database out. Figma's application code
+    already ran on thousands of stateless servers, while the database still
+    lived on one machine. First, the team used vertical partitioning, moving
+    groups of related tables, such as files or organizations, onto their own
+    dedicated databases. Each cutover paused traffic to those tables briefly,
+    and about 2% of requests failed during a 30-second window. By the end of
+    2022, Figma ran roughly a dozen of these databases, and by April 2023 the
+    busiest one sat near 10% CPU.
 
-    Then the bottleneck moved again. Some single tables had grown to
-    several terabytes and billions of rows. The tables with the most writes
-    would soon need more disk operations per second than one RDS database
-    supports. Moving whole tables could not help, because a table was the
-    smallest piece the team could move. So Figma began to split single
-    tables across many databases, which is called sharding. The first table
-    took about 9 months of work and was split in September 2023. Chapter 6
-    covers how sharding works.
+    Even then, the bottleneck moved once more. A handful of single tables had
+    grown to several terabytes and billions of rows, and the heaviest-write
+    tables were nearing the maximum disk operations per second that one RDS
+    instance could support. Moving whole tables could no longer shrink a
+    single table any further. So Figma began horizontal sharding, splitting
+    individual tables across multiple databases. Sharding their first table
+    took about 9 months of engineering work and went live in September 2023.
+    Chapter 6 walks through how sharding works in detail.
 
-    From 2020 to early 2024, Figma's database stack grew almost 100 times.
-    In both posts, the hard part was the database, the one part that ran on
-    one machine. Scaling it up was the fast first fix, and it reached
-    its ceiling. Scaling it out took years of work, because the database
-    holds the state.
+    Between 2020 and early 2024, Figma's database stack grew almost 100 times
+    larger. Through both posts, one theme stands out. Scaling up was fast and
+    bought valuable time before hitting a hard ceiling, while scaling out the
+    stateful database took years of careful engineering.
 
     ## In a design review
 
-    Ask these questions about any design.
+    A few practical questions keep scaling discussions grounded in any review.
 
-    1. Is the system slow for one user, or only under load?
-    2. Which part runs out first at the peak, and how much room does it have?
-    3. Can any server answer any request? Where do sessions and uploads live?
-    4. If one server fails at the peak, can the others carry its load?
-    5. After this part scales, which part is next?
+    1. Is the app slow for one user alone, or only when traffic is heavy?
+    2. Which box runs out of room first at peak hour, and how much headroom is left?
+    3. Can any app server handle any user, and where do sessions and uploaded files live?
+    4. If one server drops out during peak hour, can the remaining servers absorb its load?
+    5. Once we scale this tier, which part becomes the next bottleneck?
 
-    When you propose scaling, say which kind and why. For the photo app it could
-    be this. Keep the feed servers stateless and run at least 3 of them, so
-    one can fail at the peak. Run the database on a large machine for now,
-    because it takes every write. Plan read copies of it before its CPU
-    passes 70%.
+    When you recommend a scaling plan, name which kind of scaling you chose
+    and why. For our photo app, you could say this. Keep the feed servers
+    stateless and run at least 3 of them so any single machine can fail at
+    peak hour. Keep the database on a larger machine for now because it takes
+    every write, and add read copies before its CPU climbs past 70%.
   `,
   quiz: [
     {
       kind: "choice",
-      prompt: "The feed takes 3 s to load at 4 am, when almost nobody else is online. What is the first thing to do?",
+      prompt: "The photo feed takes 3 s to load at 4 am, when almost nobody else is online. What should you do first?",
       options: [
         { text: "Find out why one request does so much work", correct: true },
-        { text: "Add more servers", why: "The system is slow with almost no load, so more servers would each still take 3 s per request." },
-        { text: "Move the app to a bigger machine", why: "A bigger machine helps when the server is busy. At 4 am it is nearly idle, so the time is in the work itself." },
+        { text: "Add more servers", why: "The app is slow with almost no traffic, so extra servers would each still take 3 s on that single request." },
+        { text: "Move the app to a bigger machine", why: "A bigger machine helps when CPU or memory is full. At 4 am the server is almost idle, so the delay is in the work itself." },
       ],
-      explain: "Slow for one user is a performance problem. Fix the work before adding capacity.",
+      explain: "Being slow for a single user is a performance problem. Trim the work each request does before adding capacity.",
     },
     {
       kind: "choice",
-      prompt: "A photo app's one server hits 95% CPU every evening. It keeps sessions in memory, and the team must fix the slowdown this week with no code changes. What do they do?",
+      prompt: "A photo app's single server hits 95% CPU every evening. It stores user sessions in memory, and the team needs to fix the slowdown this week with no code changes. What is the best move?",
       options: [
         { text: "Move the app to a bigger machine", correct: true },
-        { text: "Add 2 servers behind a load balancer", why: "The sessions live in one server's memory, so users would be signed out whenever a request reached another server." },
-        { text: "Add a bigger database", why: "The server's CPU is what is full. The database is not the bottleneck yet." },
+        { text: "Add 2 servers behind a load balancer", why: "Because sessions live in one server's memory, users would get signed out whenever a request landed on another server." },
+        { text: "Add a bigger database", why: "The app server's CPU is what is full right now, not the database." },
       ],
-      explain: "Scaling up needs no code changes, so it is the fastest fix. Moving sessions out of memory comes next, before the bigger machine fills up.",
+      explain: "Scaling up requires no code changes, so it is the fastest relief. Moving sessions out of local memory comes next, before the larger machine fills up.",
       replay: "up",
     },
     {
       kind: "choice",
-      prompt: "What must be true before you can add servers behind a load balancer?",
+      prompt: "What must be true before you can cleanly add app servers behind a load balancer?",
       options: [
         { text: "Any server can answer any request, because user data lives outside the servers", correct: true },
-        { text: "Every server has the same number of cores", why: "A load balancer can send more requests to bigger servers. The servers do not need to match." },
-        { text: "The database runs on the biggest machine available", why: "The database size does not decide whether servers can share the requests. Where the state lives does." },
+        { text: "Every server has the same number of cores", why: "A load balancer can weight traffic toward larger machines, so the servers do not have to match." },
+        { text: "The database runs on the biggest machine available", why: "Database size does not decide whether app servers can share requests. Where session and file state live does." },
       ],
-      explain: "A stateless server keeps nothing between requests, so the balancer can send any request to any server.",
+      explain: "Stateless servers hold no private user data between requests, so the load balancer can route any request to any healthy server.",
       replay: "shared",
     },
     {
       kind: "choice",
-      prompt: "A photo app scales out from 1 server to 3, and traffic keeps growing. Which part becomes the bottleneck next?",
+      prompt: "A photo app scales out from 1 app server to 3, and traffic keeps rising. Which part becomes the bottleneck next?",
       options: [
         { text: "The database that all 3 servers share", correct: true },
-        { text: "The phone", why: "Each phone sends its own few requests. It does not carry the growing total." },
-        { text: "Server 1, because it was there first", why: "The load balancer splits the requests evenly, so Server 1 gets no more than the others." },
+        { text: "The phone", why: "Each phone only sends its own few requests and does not carry the growing traffic from other users." },
+        { text: "Server 1, because it was there first", why: "The load balancer spreads requests evenly across all three servers, so Server 1 carries no extra share." },
       ],
-      explain: "Scaling out the servers sends all their queries to the one shared database, so the load moves there.",
+      explain: "Scaling out the app servers sends all of their queries to the single shared database, so the bottleneck moves there.",
       replay: "db",
     },
     {
       kind: "choice",
-      prompt: "3 servers each run at 60% CPU at the peak. One fails. About how busy are the other two?",
+      prompt: "Three servers each sit at 60% CPU during peak hour, and one fails. Roughly how busy are the remaining two?",
       options: [
         { text: "About 90%", correct: true },
-        { text: "About 60%", why: "The failed server's requests do not disappear. The other two now share them." },
-        { text: "About 120%", why: "That gives the failed server's whole 60% to each survivor. The two share it, so each gets 30% more." },
+        { text: "About 60%", why: "The failed server's traffic does not vanish. The two surviving servers now carry it." },
+        { text: "About 120%", why: "That adds the failed server's entire 60% to each survivor. Split across two machines, each takes an extra 30%." },
       ],
-      explain: "The total load is 3 times 60%, which is 180%. Split over 2 servers, that is 90% each, close to overload.",
+      explain: "Total load across 3 servers at 60% is 180%. Divided across 2 survivors, each runs at 90%, close to overload.",
     },
     {
       kind: "choice",
-      prompt: "In 2020, Figma's main database already ran on the largest machine Amazon offered, and writes were a large part of its load. Why did read replicas not solve the problem?",
+      prompt: "In 2020, Figma's main database already ran on the largest machine Amazon offered, and writes made up a big share of its load. Why did read replicas not solve the problem?",
       options: [
         { text: "Every write still went to the one main database", correct: true },
-        { text: "The team had not tried a bigger machine", why: "It had already moved to the largest size, so scaling up was over." },
-        { text: "The app servers were the bottleneck", why: "Figma's app ran on thousands of servers. The one database was the part running out." },
+        { text: "The team had not tried a bigger machine", why: "Figma had already moved to the largest available RDS instance, so vertical scaling had reached its ceiling." },
+        { text: "The app servers were the bottleneck", why: "Figma already ran thousands of app servers. The single database was the piece running out of room." },
       ],
-      explain: "A replica answers reads only. To take writes off the main database, Figma had to split its data across more databases.",
+      explain: "Read replicas only offload read queries. To spread out writes, Figma had to split data across multiple databases.",
     },
     {
       kind: "choice",
-      prompt: "An app's one server is only 40% busy at the peak, but the app is down whenever the server restarts for updates. What fixes that?",
+      prompt: "An app's single server sits at only 40% CPU during peak hour, yet users see downtime every time the server restarts for updates. What fixes that?",
       options: [
         { text: "Run at least 2 servers behind a load balancer", correct: true },
-        { text: "Move to a bigger machine", why: "A bigger machine is still one machine. When it restarts, the app is still down." },
-        { text: "Restart the server less often", why: "That makes the outages rarer, but each one still takes the whole app down." },
+        { text: "Move to a bigger machine", why: "A bigger machine is still a single machine. Restarting it still takes the whole app offline." },
+        { text: "Restart the server less often", why: "Fewer restarts mean fewer outages, yet every single update still drops users." },
       ],
-      explain: "Scaling out also removes the single point of failure. One server can restart while the other serves users.",
+      explain: "Scaling out also removes the single point of failure, so one server can restart while the other keeps serving users.",
     },
     {
       kind: "order",
@@ -388,7 +411,7 @@ export default defineLesson({
         "Start 2 more servers behind a load balancer",
         "Watch the shared database, which now takes all the queries",
       ],
-      explain: "First confirm that more capacity is the fix. The server must be stateless before others join it, and once they do, the load moves to the database.",
+      explain: "Start by confirming that capacity is the real issue, make the app stateless before adding more machines, and then watch the shared database once traffic grows.",
     },
   ],
 })
