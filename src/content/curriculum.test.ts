@@ -252,7 +252,7 @@ test("the real curriculum holds the availability lesson", () => {
 
   expect(lesson?.track).toBe("foundations")
   expect(lesson?.order).toBe(4)
-  expect(lesson?.minutes).toBe(8)
+  expect(lesson?.minutes).toBe(10)
   expect(lesson?.headings.map((heading) => heading.id)).toEqual([
     "down-at-2-am",
     "counting-nines",
