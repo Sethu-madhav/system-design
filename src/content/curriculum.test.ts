@@ -283,7 +283,7 @@ test("the real curriculum holds the consistency-and-partitions lesson", () => {
 
   expect(lesson?.track).toBe("foundations")
   expect(lesson?.order).toBe(5)
-  expect(lesson?.minutes).toBe(9)
+  expect(lesson?.minutes).toBe(11)
   expect(lesson?.headings.map((heading) => heading.id)).toEqual([
     "two-copies-two-places",
     "the-link-breaks",
