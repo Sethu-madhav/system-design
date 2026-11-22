@@ -87,6 +87,22 @@ test("what-system-design-is shows 8 cues, 'dies' crosses out the database and 'b
   await expect(db.getByTestId("scene-note")).toHaveText("runs out first")
 })
 
+test("what-system-design-is shows 10 still figures that never play, and the Stack Overflow figure draws the 2016 setup", async ({ page }) => {
+  await gotoReady(page, "/#/learn/what-system-design-is")
+  const figures = page.locator('[data-testid="prose"] [data-testid="figure"]')
+  await expect(figures).toHaveCount(10)
+  await expect(figures.locator("button, [tabindex], [data-cue]")).toHaveCount(0)
+  await expect(figures.locator('[data-testid="stage"]')).toHaveCount(0)
+  const stack = figures.filter({ hasText: "Stack Overflow ran this setup in February 2016" })
+  await expect(stack.locator("[data-scene-node]")).toHaveCount(8)
+  await expect(stack.locator("[data-scene-packet]")).toHaveCount(7)
+  await expect(stack.locator('[data-scene-node="web"]').getByTestId("scene-note")).toHaveText("1 could carry it")
+  await expect(stack.locator('[data-scene-node="sql"] svg[data-ink]')).toBeAttached()
+  const standby = figures.filter({ hasText: "a standby copy takes over" })
+  await expect(standby.locator('[data-scene-node="db"]')).toHaveAttribute("data-down", "")
+  await expect(page.getByTestId("scene").getByText("Step 1 of 8")).toBeVisible()
+})
+
 test("nodes carry their kind and role, and the database is filled with its role color", async ({ page }) => {
   await gotoReady(page, "/#/learn/what-system-design-is")
   const scene = page.getByTestId("scene")

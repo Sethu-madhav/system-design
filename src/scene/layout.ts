@@ -8,6 +8,7 @@ export const NODE_H = 0.52
 export const CELL_STEP = 8
 export const MIN_CELL = 64
 export const MAX_CELL = 128
+export const FIGURE_MAX_CELL = 96
 export const EDGE_GAP = 6
 export const EDGE_PAD = 8
 
@@ -28,9 +29,9 @@ export function gridOf(timeline: Timeline): { readonly cols: number; readonly ro
   }), { cols: 0, rows: 0 })
 }
 
-export function layoutScene(timeline: Timeline, width: number): Layout {
+export function layoutScene(timeline: Timeline, width: number, maxCell = MAX_CELL): Layout {
   const { cols, rows } = gridOf(timeline)
-  const cellPx = Math.min(MAX_CELL, Math.max(MIN_CELL, Math.floor(width / cols / CELL_STEP) * CELL_STEP))
+  const cellPx = Math.min(maxCell, Math.max(MIN_CELL, Math.floor(width / cols / CELL_STEP) * CELL_STEP))
   const w = Math.round(NODE_W * cellPx / 4) * 4
   const h = Math.round(NODE_H * cellPx / 2) * 2
   const nodes: Record<string, Rect> = {}

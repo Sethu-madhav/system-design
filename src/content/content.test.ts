@@ -18,6 +18,12 @@ describe.each(curriculum.flat.map((lesson) => [lesson.slug, lesson] as const))(
       expect(lintLayout(lesson.timeline)).toEqual([])
     })
 
+    test("figure layouts: no edge crosses a node, all nodes on the grid", () => {
+      for (const block of lesson.body.blocks) {
+        if (block.t === "figure") expect(lintLayout(block.timeline)).toEqual([])
+      }
+    })
+
     test("every scene step except the first is cued in the text", () => {
       for (const step of lesson.timeline.steps.slice(1)) {
         expect(lesson.body.cues).toContain(step.id)
