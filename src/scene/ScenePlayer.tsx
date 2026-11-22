@@ -3,15 +3,16 @@ import { Button } from "@/components/ui/button"
 import { Kbd } from "@/components/ui/kbd"
 import { Slider } from "@/components/ui/slider"
 import { InkLayer, useInkBox, useInkContext } from "@/lib/ink"
-import { frameAt, type Frame, type Motion, type Timeline } from "./timeline"
+import { frameAt, stillFrame, type Frame, type Motion, type Timeline } from "./timeline"
 import { initialPlayer, reducePlayer, type PlayerEvent, type PlayerState } from "./player"
-import { gridOf, layoutScene, MAX_CELL, MIN_CELL, pointOn } from "./layout"
+import { FIGURE_MAX_CELL, gridOf, layoutScene, MAX_CELL, MIN_CELL, pointOn, type Layout } from "./layout"
 import { NODE_ROLE, type PacketTone } from "./model"
 import { sceneEdgeRecipe, sceneNodeRecipe } from "./ink"
 import "./scene.css"
 
 const REDUCED_QUERY = "(prefers-reduced-motion: reduce)"
 const MAX_TICK_MS = 100
+const FIGURE_GUTTER = 32
 
 const TONE_CLASS: Readonly<Record<PacketTone, string>> = {
   request: "bg-sticky-yellow",
@@ -120,6 +121,46 @@ export function useSceneCue(stepId: string): { active: boolean; play: () => void
   return { active: ctx.stepId === stepId, play: () => ctx.play(stepId) }
 }
 
+function Stage({ timeline, frame, layout, still = false }: { timeline: Timeline; frame: Frame; layout: Layout; still?: boolean }) {
+  return (
+    <div data-testid={still ? "figure-stage" : "stage"} role={still ? undefined : "img"} aria-label={still ? undefined : frame.caption} aria-hidden={still ? true : undefined} className="relative mx-auto" style={{ width: layout.width, height: layout.height }}>
+      {timeline.edges.map((edge) => {
+        const g = layout.edges[edge.id]
+        const view = frame.edges[edge.id]
+        return <div key={edge.id} data-scene-edge={edge.id} data-visible={String(view.visible)} aria-hidden={!view.visible} data-active={view.active ? "" : undefined} className="absolute" style={{ left: g.host.x, top: g.host.y, width: g.host.w, height: g.host.h }}>
+          <InkLayer recipe={sceneEdgeRecipe} seed={edge.id} params={{ x1: g.x1 - g.host.x, y1: g.y1 - g.host.y, x2: g.x2 - g.host.x, y2: g.y2 - g.host.y, heads: edge.heads }} />
+        </div>
+      })}
+      {Object.entries(timeline.nodes).map(([id, def]) => {
+        const rect = layout.nodes[id]
+        const view = frame.nodes[id]
+        return <div key={id} data-scene-node={id} data-kind={def.kind} data-role={NODE_ROLE[def.kind]} data-visible={String(view.visible)} aria-hidden={!view.visible} data-focus={view.focus ? "" : undefined} data-down={view.status === "down" ? "" : undefined} className="absolute" style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h }}>
+          <InkLayer recipe={sceneNodeRecipe} seed={id} params={{ kind: def.kind }} />
+          <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1 w-max max-w-[calc(100%+1.5rem)] bg-paper px-1 text-center font-hand text-sm leading-tight">{def.label}</span>
+          {view.note ? <span data-testid="scene-note" className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 w-max bg-paper px-1 font-hand text-sm text-red">{view.note}</span> : null}
+        </div>
+      })}
+      {frame.packets.map((packet) => {
+        const edge = timeline.edges.find((entry) => entry.id === packet.edge)
+        if (edge === undefined) return null
+        const [x, y] = pointOn(layout.edges[packet.edge], edge.a === packet.from, packet.u)
+        return (
+          <div
+            key={packet.key}
+            data-scene-packet={packet.key}
+            data-tone={packet.tone}
+            aria-hidden
+            className={`pointer-events-none absolute left-0 top-0 min-w-4 whitespace-nowrap rounded-sm border border-ink px-1 text-center font-hand text-xs leading-tight shadow-sm ${TONE_CLASS[packet.tone]}`}
+            style={{ transform: `translate(${x}px, ${y}px) translate(-50%, -50%)` }}
+          >
+            {packet.label}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 export function ScenePlayer() {
   const { timeline, motion, state, frame, dispatch, stage } = useScene()
   const { ref, box } = useInkBox()
@@ -151,41 +192,7 @@ export function ScenePlayer() {
     >
       <div ref={ref} tabIndex={scrolls ? 0 : undefined} role={scrolls ? "region" : undefined} aria-label={scrolls ? "Diagram, scrolls sideways" : undefined} className="w-full overflow-x-auto overflow-y-hidden" style={{ boxSizing: "content-box", paddingTop: 24, paddingBottom: 24, aspectRatio: `${cols} / ${rows}`, minHeight: rows * MIN_CELL, maxHeight: rows * MAX_CELL }}>
         {layout ? (
-          <div data-testid="stage" role="img" aria-label={frame.caption} className="relative mx-auto" style={{ width: layout.width, height: layout.height }}>
-            {timeline.edges.map((edge) => {
-              const g = layout.edges[edge.id]
-              const view = frame.edges[edge.id]
-              return <div key={edge.id} data-scene-edge={edge.id} data-visible={String(view.visible)} aria-hidden={!view.visible} data-active={view.active ? "" : undefined} className="absolute" style={{ left: g.host.x, top: g.host.y, width: g.host.w, height: g.host.h }}>
-                <InkLayer recipe={sceneEdgeRecipe} seed={edge.id} params={{ x1: g.x1 - g.host.x, y1: g.y1 - g.host.y, x2: g.x2 - g.host.x, y2: g.y2 - g.host.y, heads: edge.heads }} />
-              </div>
-            })}
-            {Object.entries(timeline.nodes).map(([id, def]) => {
-              const rect = layout.nodes[id]
-              const view = frame.nodes[id]
-              return <div key={id} data-scene-node={id} data-kind={def.kind} data-role={NODE_ROLE[def.kind]} data-visible={String(view.visible)} aria-hidden={!view.visible} data-focus={view.focus ? "" : undefined} data-down={view.status === "down" ? "" : undefined} className="absolute" style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h }}>
-                <InkLayer recipe={sceneNodeRecipe} seed={id} params={{ kind: def.kind }} />
-                <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1 w-max max-w-[calc(100%+1.5rem)] text-center font-hand text-sm leading-tight">{def.label}</span>
-                {view.note ? <span data-testid="scene-note" className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 w-max bg-paper px-1 font-hand text-sm text-red">{view.note}</span> : null}
-              </div>
-            })}
-            {frame.packets.map((packet) => {
-              const edge = timeline.edges.find((entry) => entry.id === packet.edge)
-              if (edge === undefined) return null
-              const [x, y] = pointOn(layout.edges[packet.edge], edge.a === packet.from, packet.u)
-              return (
-                <div
-                  key={packet.key}
-                  data-scene-packet={packet.key}
-                  data-tone={packet.tone}
-                  aria-hidden
-                  className={`pointer-events-none absolute left-0 top-0 min-w-4 whitespace-nowrap rounded-sm border border-ink px-1 text-center font-hand text-xs leading-tight shadow-sm ${TONE_CLASS[packet.tone]}`}
-                  style={{ transform: `translate(${x}px, ${y}px) translate(-50%, -50%)` }}
-                >
-                  {packet.label}
-                </div>
-              )
-            })}
-          </div>
+          <Stage timeline={timeline} frame={frame} layout={layout} />
         ) : null}
       </div>
       <div aria-live="polite" className="text-center">
@@ -206,6 +213,23 @@ export function ScenePlayer() {
         ))}
       </div>
       <p className="hidden text-center text-sm text-pencil-text md:block"><Kbd>Space</Kbd> play or pause, <Kbd>←</Kbd> <Kbd>→</Kbd> step</p>
+    </figure>
+  )
+}
+
+export function SceneFigure({ timeline }: { timeline: Timeline }) {
+  const { ref, box } = useInkBox()
+  const { cols, rows } = gridOf(timeline)
+  const layout = React.useMemo(() => box ? layoutScene(timeline, box.w - 2 - 2 * FIGURE_GUTTER, FIGURE_MAX_CELL) : null, [timeline, box?.w])
+  const frame = React.useMemo(() => stillFrame(timeline), [timeline])
+  const scrolls = layout !== null && box !== null && layout.width + 2 * FIGURE_GUTTER > box.w
+
+  return (
+    <figure data-testid="figure" className="space-y-2">
+      <div ref={ref} tabIndex={scrolls ? 0 : undefined} role={scrolls ? "region" : undefined} aria-label={scrolls ? "Diagram, scrolls sideways" : undefined} className="w-full overflow-x-auto overflow-y-hidden" style={{ boxSizing: "content-box", paddingTop: 24, paddingBottom: 44, aspectRatio: `${cols} / ${rows}`, minHeight: rows * MIN_CELL, maxHeight: rows * FIGURE_MAX_CELL }}>
+        {layout ? <div className="min-w-full w-max" style={{ paddingInline: FIGURE_GUTTER }}><Stage timeline={timeline} frame={frame} layout={layout} still /></div> : null}
+      </div>
+      <figcaption className="text-center text-pencil-text">{frame.caption}</figcaption>
     </figure>
   )
 }

@@ -351,3 +351,33 @@ export function readingTime(caption: string): number {
 export function ease(p: number): number {
   return p < 0.5 ? 2 * p * p : 1 - (-2 * p + 2) ** 2 / 2
 }
+
+export function stillFrame(timeline: Timeline): Frame {
+  const step = timeline.steps[0]
+  const counts = new Map<EdgeId, number>()
+  for (const flight of step.flights) {
+    if (flight.label !== "") counts.set(flight.edge, (counts.get(flight.edge) ?? 0) + 1)
+  }
+  const seen = new Map<EdgeId, number>()
+  const packets: PacketView[] = []
+  for (const flight of step.flights) {
+    if (flight.label === "") continue
+    const index = seen.get(flight.edge) ?? 0
+    seen.set(flight.edge, index + 1)
+    const along = (index + 1) / ((counts.get(flight.edge) ?? 1) + 1)
+    const fromIsA = flight.edge.startsWith(`${flight.from}~`)
+    packets.push({
+      key: flight.key,
+      edge: flight.edge,
+      u: fromIsA ? along : 1 - along,
+      from: flight.from,
+      to: flight.to,
+      label: flight.label,
+      tone: flight.tone,
+    })
+  }
+  const frame = frameAt(timeline, 0, "reduced")
+  const edges: Record<EdgeId, { readonly visible: boolean; readonly active: boolean }> = {}
+  for (const edge of timeline.edges) edges[edge.id] = { visible: frame.edges[edge.id].visible, active: false }
+  return { ...frame, edges, packets }
+}

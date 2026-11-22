@@ -69,6 +69,8 @@ function blockText(block: Block): string {
       return block.items.map(inlineText).join(" ")
     case "code":
       return block.v
+    case "figure":
+      return block.caption
   }
 }
 
