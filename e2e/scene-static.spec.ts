@@ -116,6 +116,18 @@ test("lesson 1.2 has ten still figures and the Google fan-out figure", async ({ 
   await expect(overload.locator('[data-scene-node="queue"]').getByTestId("scene-note")).toHaveText("full")
 })
 
+test("lesson 1.3 has nine still figures and the Figma database figure", async ({ page }) => {
+  await gotoReady(page, "/#/learn/scaling-up-and-out")
+  const figures = page.locator('[data-testid="prose"] [data-testid="figure"]')
+  await expect(figures).toHaveCount(9)
+  await expect(figures.locator("button, [tabindex], [data-cue]")).toHaveCount(0)
+  const figma = figures.filter({ hasText: "Figma's database changed shape between 2020 and 2023" })
+  await expect(figma.locator("[data-scene-node]")).toHaveCount(6)
+  await expect(figma.locator('[data-scene-node="main"]').getByTestId("scene-note")).toHaveText("largest machine")
+  const fails = figures.filter({ hasText: "When Server 1 fails" })
+  await expect(fails.locator('[data-scene-node="one"]')).toHaveAttribute("data-down", "")
+})
+
 test("nodes carry their kind and role, and the database is filled with its role color", async ({ page }) => {
   await gotoReady(page, "/#/learn/what-system-design-is")
   const scene = page.getByTestId("scene")
