@@ -10,6 +10,7 @@ import {
   frameAt,
   readingTime,
   stepIndexAt,
+  stillFrame,
 } from "./timeline"
 
 test("defineScene keeps step order from object keys", () => {
@@ -406,4 +407,24 @@ test("frameAt is referentially cheap: 10k calls < 50 ms", () => {
   for (let index = 0; index < 10000; index += 1) frameAt(fixture, (index * 7) % fixture.duration, "full")
 
   expect(performance.now() - started).toBeLessThan(50)
+})
+
+test("stillFrame shows every labeled send of the first step at rest, spread along its edge", () => {
+  const timeline = compile(defineScene({
+    a: { kind: "client", label: "A", at: [0, 0] },
+    b: { kind: "server", label: "B", at: [2, 0] },
+    c: { kind: "db", label: "C", at: [4, 0] },
+  }).steps((s) => ({
+    still: s.step("x", s.send("a", "b", "ask"), s.send("b", "a", "reply", "response"), s.send("b", "c"), s.down("c"), s.note("b", "busy")),
+  })))
+  const frame = stillFrame(timeline)
+  expect(frame.packets.map((packet) => [packet.label, packet.edge, packet.u])).toEqual([
+    ["ask", "a~b", 1 / 3],
+    ["reply", "a~b", 1 - 2 / 3],
+  ])
+  expect(frame.edges["a~b"]).toEqual({ visible: true, active: false })
+  expect(frame.edges["b~c"]).toEqual({ visible: true, active: false })
+  expect(frame.nodes.b.note).toBe("busy")
+  expect(frame.nodes.c.status).toBe("down")
+  expect(frame.caption).toBe("x")
 })
