@@ -1,4 +1,130 @@
-import { defineLesson, defineScene, md } from "@/content/author"
+import { defineLesson, defineScene, figure, md } from "@/content/author"
+
+const noonAndNight = figure({
+  noon: { kind: "mobile", label: "Phone at noon", at: [0, 0] },
+  quiet: { kind: "server", label: "Feed server", at: [4, 0] },
+  night: { kind: "mobile", label: "Phone at 9 pm", at: [0, 2] },
+  line: { kind: "queue", label: "Queue", at: [2, 2] },
+  busy: { kind: "server", label: "Feed server", at: [4, 2] },
+}, "At noon a feed request goes straight to the server. At 9 pm the same request waits in a long line first.", (s) => [
+  s.send("noon", "quiet", "GET /feed"),
+  s.send("night", "line", "GET /feed"),
+  s.send("line", "busy"),
+  s.focus("line"),
+  s.note("noon", "about 10 ms"),
+  s.note("night", "about 1 s"),
+])
+
+const twoNumbers = figure({
+  phone: { kind: "mobile", label: "Phone", at: [0, 0] },
+  server: { kind: "server", label: "Feed server", at: [2, 0] },
+}, "Latency is how long one request takes. Throughput is how many requests the server finishes each second.", (s) => [
+  s.send("phone", "server"),
+  s.send("server", "phone"),
+  s.note("phone", "10 ms trip"),
+  s.note("server", "100 a second"),
+])
+
+const secondServer = figure({
+  phone: { kind: "mobile", label: "Phones", at: [0, 1] },
+  a: { kind: "server", label: "Server A", at: [2, 0] },
+  b: { kind: "server", label: "Server B", at: [2, 2] },
+}, "A second server doubles throughput to 200 requests a second. Each request still takes 10 ms, so latency stays the same.", (s) => [
+  s.send("phone", "a"),
+  s.send("phone", "b"),
+  s.note("a", "100 a second"),
+  s.note("b", "100 a second"),
+])
+
+const percentiles = figure({
+  most: { kind: "mobile", label: "Most users", at: [0, 0] },
+  few: { kind: "mobile", label: "1 in 100", at: [0, 2] },
+  server: { kind: "server", label: "Feed server", at: [2, 1] },
+}, "Most feed requests finish in 10 ms, and 1 in 100 takes 300 ms or longer. An average of about 15 ms hides the slow one.", (s) => [
+  s.send("most", "server"),
+  s.send("few", "server"),
+  s.note("most", "p50 10 ms"),
+  s.note("few", "p99 300 ms"),
+])
+
+const threeCalls = figure({
+  phone: { kind: "mobile", label: "Phone", at: [0, 2] },
+  server: { kind: "server", label: "Feed server", at: [2, 2] },
+  photos: { kind: "service", label: "Photos", at: [5, 0] },
+  likes: { kind: "service", label: "Likes", at: [5, 2] },
+  comments: { kind: "service", label: "Comments", at: [5, 4] },
+}, "One feed screen calls three services. The screen is ready only when the slowest call comes back.", (s) => [
+  s.send("phone", "server", "GET /feed"),
+  s.send("server", "photos"),
+  s.send("server", "likes"),
+  s.send("server", "comments"),
+  s.focus("comments"),
+  s.note("comments", "300 ms"),
+])
+
+const queueWait = figure({
+  phone: { kind: "mobile", label: "Phone", at: [0, 0] },
+  queue: { kind: "queue", label: "Queue", at: [2, 0] },
+  server: { kind: "server", label: "Feed server", at: [4, 0] },
+}, "At 90% busy, a request waits about 90 ms in line before its 10 ms of work starts.", (s) => [
+  s.send("phone", "queue", "GET /feed"),
+  s.send("queue", "server"),
+  s.note("queue", "waits 90 ms"),
+  s.note("server", "90% busy"),
+])
+
+const littlesLaw = figure({
+  phone: { kind: "mobile", label: "Phones", at: [0, 0] },
+  queue: { kind: "queue", label: "Queue", at: [2, 0] },
+  server: { kind: "server", label: "Feed server", at: [4, 0] },
+}, "With 90 requests arriving each second, and each staying inside for 0.1 s, about 9 requests are inside at any moment.", (s) => [
+  s.send("phone", "queue", "90/s"),
+  s.send("queue", "server"),
+  s.note("queue", "about 9 inside"),
+])
+
+const overload = figure({
+  phones: { kind: "mobile", label: "Phones", at: [0, 0] },
+  queue: { kind: "queue", label: "Queue", at: [2, 1] },
+  server: { kind: "server", label: "Feed server", at: [4, 1] },
+  late: { kind: "mobile", label: "New request", at: [0, 2] },
+}, "More than 100 requests arrive each second, and the server still finishes 100. With a cap on the queue, a new request gets a fast 503 error.", (s) => [
+  s.send("phones", "queue", "too many"),
+  s.send("queue", "server", "100/s"),
+  s.send("queue", "late", "503", "error"),
+  s.note("queue", "full"),
+])
+
+const fanOut = figure({
+  user: { kind: "client", label: "User request", at: [0, 2] },
+  root: { kind: "server", label: "Root server", at: [2, 2] },
+  fast: { kind: "service", label: "Fast 95%", at: [5, 0] },
+  slow: { kind: "service", label: "Slow 5%", at: [5, 2] },
+  copy: { kind: "service", label: "Another server", at: [5, 4] },
+}, "A Google root server sends each request to many leaf servers. At the p99, the fastest 95% of leaves answered within 70 ms, and waiting for every leaf took 140 ms. A hedged copy of a slow read goes to another server, and the first answer wins.", (s) => [
+  s.send("user", "root", "query"),
+  s.send("root", "fast"),
+  s.send("root", "slow"),
+  s.send("root", "copy", "hedged read", "data"),
+  s.focus("slow"),
+  s.note("fast", "70 ms"),
+  s.note("slow", "140 ms"),
+])
+
+const reviewNumbers = figure({
+  phone: { kind: "mobile", label: "Phones", at: [0, 1] },
+  lb: { kind: "lb", label: "Load balancer", at: [2, 1] },
+  a: { kind: "server", label: "Feed server", at: [4, 0] },
+  b: { kind: "server", label: "Feed server", at: [4, 2] },
+}, "State both numbers together. At the evening peak, the feed serves about 7,000 requests a second with a p99 under 300 ms, and no server runs above 70% busy.", (s) => [
+  s.send("phone", "lb", "7,000/s"),
+  s.send("lb", "a"),
+  s.send("lb", "b"),
+  s.note("phone", "p99 under 300 ms"),
+  s.note("a", "70% busy"),
+  s.note("b", "70% busy"),
+])
+
 
 const scene = defineScene({
   phone: { kind: "mobile", label: "Phone", at: [0, 1] },
@@ -117,6 +243,8 @@ export default defineLesson({
     close to full, requests spend most of their time waiting in line before
     work on them even starts.
 
+    ${noonAndNight}
+
     This lesson explains why that wait happens and how to reason about it. We only need two core measures, latency and throughput, along with
     a clear mental model of how requests queue up. Near the end, we look at
     real numbers Google published about what happens when one user request has
@@ -140,6 +268,8 @@ export default defineLesson({
     is its capacity. A real server handles several requests at once across its
     CPU cores, yet the same simple math applies to each worker.
 
+    ${twoNumbers}
+
     It helps to keep the two questions separate. Latency tells you how long
     one person waits. Throughput tells you how many people the system can
     serve each second. A design can do well on one and struggle on the
@@ -158,6 +288,8 @@ export default defineLesson({
     - **More servers.** Adding a second server doubles your throughput. If the first server was not busy to begin with, each request still takes 10 ms, so latency stays the same.
     - **Batching.** Writing 100 analytics events to disk in one group takes far less disk time than 100 separate writes, so throughput rises. Each event now waits for its batch to fill up, so latency rises too.
     - **Servers closer to users.** Placing servers nearer to the people using the app cuts network travel time on every request. Each server still finishes the same number of requests per second.
+
+    ${secondServer}
 
     Let the problem you see guide the fix. When users wait too long while your
     servers sit half idle, focus on cutting latency. When your servers are
@@ -188,6 +320,8 @@ export default defineLesson({
     yet stalls for someone every few seconds. Its average might sit around
     15 ms, which looks healthy on a dashboard while real people wait.
 
+    ${percentiles}
+
     > pitfall: Avoid setting latency goals on the average. A few 5-second stalls barely nudge an average. Write your target as a percentile, such as "p99 under 300 ms", and set your alerts on that number instead.
 
     ## Slow calls add up
@@ -196,6 +330,8 @@ export default defineLesson({
     might ask one service for the photos, another for like counts, and another
     for comments. The phone can only finish drawing the screen once the
     slowest of those calls comes back.
+
+    ${threeCalls}
 
     Picture a page that makes 50 backend calls, where each call has an
     independent 1% chance of running slower than its p99. The chance that one
@@ -219,6 +355,8 @@ export default defineLesson({
     busy has to wait in a queue.
     ${cue("busy", "During the evening peak, requests arrive almost as fast as the server finishes them")},
     so new arrivals find a line waiting ahead of them.
+
+    ${queueWait}
 
     The share of time a server spends doing work is its utilization. At 50%
     utilization, a new request often finds the server free. At 90%, it almost
@@ -254,6 +392,8 @@ export default defineLesson({
     find that ${cue("little", "about 9 requests are in the system at any moment")},
     either waiting in line or being served.
 
+    ${littlesLaw}
+
     What makes Little's law so dependable is that it holds for any steady
     system whose queue is not growing without bound, no matter how uneven the
     traffic pattern is. It is a practical tool for sizing. If our photo app
@@ -285,6 +425,8 @@ export default defineLesson({
     requests the server did accept. Once the queue stops growing, you add
     capacity or trim the work per request so traffic drops back below
     capacity. Chapter 8 returns to this idea under back pressure.
+
+    ${overload}
 
     ## Slow servers at Google
 
@@ -323,6 +465,8 @@ export default defineLesson({
     count how many of them a single request waits on. The wider the fan-out,
     the more the slowest leaf sets the user's wait.
 
+    ${fanOut}
+
     ## In a design review
 
     Ask these questions about latency and throughput in any design review.
@@ -338,6 +482,8 @@ export default defineLesson({
     evening peak, the feed serves about 7,000 requests a second, three times
     the daily average, with a p99 under 300 ms. Each server stays at or below
     70% utilization so normal bursts do not build long queues.
+
+    ${reviewNumbers}
   `,
   quiz: [
     {

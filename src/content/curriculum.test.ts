@@ -189,7 +189,7 @@ test("the real curriculum holds the latency-and-throughput lesson", () => {
 
   expect(lesson?.track).toBe("foundations")
   expect(lesson?.order).toBe(2)
-  expect(lesson?.minutes).toBe(13)
+  expect(lesson?.minutes).toBe(14)
   expect(lesson?.headings.map((heading) => heading.id)).toEqual([
     "fast-at-noon-slow-at-night",
     "two-different-numbers",

@@ -6,7 +6,7 @@ for (const theme of ["light", "dark"] as const) {
     await page.addInitScript((value) => localStorage.setItem("theme", value), theme)
     const violations: string[] = []
     for (const size of [{ width: 1280, height: 720 }, { width: 390, height: 844 }]) {
-      for (const path of ["/#/", "/#/learn/load-balancer", "/#/learn/what-system-design-is"]) {
+      for (const path of ["/#/", "/#/learn/load-balancer", "/#/learn/what-system-design-is", "/#/learn/latency-and-throughput"]) {
         await page.setViewportSize(size)
         await gotoReady(page, path)
         await expect(page.locator("html")).toHaveClass(new RegExp(`\\b${theme}\\b`))

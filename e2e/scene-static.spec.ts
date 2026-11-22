@@ -103,6 +103,19 @@ test("what-system-design-is shows 10 still figures that never play, and the Stac
   await expect(page.getByTestId("scene").getByText("Step 1 of 8")).toBeVisible()
 })
 
+test("lesson 1.2 has ten still figures and the Google fan-out figure", async ({ page }) => {
+  await gotoReady(page, "/#/learn/latency-and-throughput")
+  const figures = page.locator('[data-testid="prose"] [data-testid="figure"]')
+  await expect(figures).toHaveCount(10)
+  await expect(figures.locator("button, [tabindex], [data-cue]")).toHaveCount(0)
+  const google = figures.filter({ hasText: "A Google root server sends each request" })
+  await expect(google.locator("[data-scene-node]")).toHaveCount(5)
+  await expect(google.locator("[data-scene-packet]")).toHaveCount(2)
+  await expect(google.locator('[data-scene-node="slow"]').getByTestId("scene-note")).toHaveText("140 ms")
+  const overload = figures.filter({ hasText: "a new request gets a fast 503 error" })
+  await expect(overload.locator('[data-scene-node="queue"]').getByTestId("scene-note")).toHaveText("full")
+})
+
 test("nodes carry their kind and role, and the database is filled with its role color", async ({ page }) => {
   await gotoReady(page, "/#/learn/what-system-design-is")
   const scene = page.getByTestId("scene")
