@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest"
-import { blockText, makeCue, md, slugify, type CueToken } from "./prose"
+import { blockText, figure, makeCue, md, slugify, type CueToken } from "./prose"
 
 const cue = makeCue<string>()
 
@@ -411,5 +411,57 @@ A **bold** *em* \`code\` [link](https://example.com) ${cue("go", "cue text")}.
       { t: "p", c: [{ t: "link", href: "https://x.com", c: [{ t: "text", v: "see " }, { t: "code", v: "a]" }, { t: "text", v: " x" }] }] },
     ])
     expect(() => md`*a **b** c*`).toThrow("unclosed emphasis")
+  })
+
+  test("a figure on its own line becomes a figure block between paragraphs", () => {
+    const pair = figure({
+      a: { kind: "client", label: "A", at: [0, 0] },
+      b: { kind: "server", label: "B", at: [2, 0] },
+    }, "A asks B.", (s) => [s.send("a", "b", "hi")])
+    const prose = md`
+      One ${cue("x", "two")}.
+      ${pair}
+      Three.
+    `
+    expect(prose.blocks.map((block) => block.t)).toEqual(["p", "figure", "p"])
+    const block = prose.blocks[1]
+    expect(block.t === "figure" && block.caption).toBe("A asks B.")
+    expect(block.t === "figure" && block.timeline.edges.map((edge) => edge.id)).toEqual(["a~b"])
+    expect(blockText(block)).toBe("A asks B.")
+    expect(prose.cues).toEqual(["x"])
+    expect(prose.words).toBe(6)
+  })
+
+  test("a figure inside a line, a heading or a code fence throws", () => {
+    const one = figure({ a: { kind: "client", label: "A", at: [0, 0] } }, "A.", () => [])
+    expect(() => md`See ${one} here.`).toThrow("a figure must stand on its own line")
+    expect(() => md`## Title ${one}`).toThrow("a figure must stand on its own line")
+    expect(() => md`
+      \`\`\`
+      ${one}
+      \`\`\`
+    `).toThrow("figure inside code")
+  })
+
+  test("a figure in a code span, a fence line or a link url throws", () => {
+    const one = figure({ a: { kind: "client", label: "A", at: [0, 0] } }, "A.", () => [])
+    expect(() => md`See \`${one}\` here.`).toThrow("figure inside code")
+    expect(() => md`
+      \`\`\`${one}
+      x
+      \`\`\`
+    `).toThrow("figure inside code")
+    expect(() => md`[a](https://x.com/${one}) b`).toThrow("figure inside link url")
+  })
+
+  test("a figure with an empty caption throws", () => {
+    expect(() => figure({ a: { kind: "client", label: "A", at: [0, 0] } }, " ", () => [])).toThrow("a figure needs a caption")
+  })
+
+  test("a figure with a bad scene throws when defined", () => {
+    expect(() => figure({
+      a: { kind: "client", label: "A", at: [0, 0] },
+      b: { kind: "server", label: "B", at: [0, 0] },
+    }, "A.", () => [])).toThrow("a and b share a cell")
   })
 })

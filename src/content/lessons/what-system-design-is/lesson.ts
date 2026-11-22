@@ -1,4 +1,145 @@
-import { defineLesson, defineScene, md } from "@/content/author"
+import { defineLesson, defineScene, figure, md } from "@/content/author"
+
+const twoSystems = figure({
+  students: { kind: "client", label: "500 students", at: [0, 0] },
+  box: { kind: "server", label: "One server", at: [2, 0] },
+  people: { kind: "internet", label: "10 million a day", at: [0, 2] },
+  lbs: { kind: "lb", label: "Load balancers", at: [2, 2] },
+  fleet: { kind: "server", label: "Web servers", at: [4, 2] },
+  dbs: { kind: "db", label: "Databases on 3 continents", at: [6, 2] },
+}, "The same one-line idea can lead to two systems. The school app runs on a single server, and the big app spreads 10 million daily users across a fleet of servers.", (s) => [
+  s.send("students", "box"),
+  s.send("people", "lbs"),
+  s.send("lbs", "fleet"),
+  s.send("fleet", "dbs"),
+])
+
+const threeBoxes = figure({
+  phone: { kind: "mobile", label: "Phone", at: [0, 0] },
+  server: { kind: "server", label: "App server", at: [2, 0] },
+  db: { kind: "db", label: "Database", at: [4, 0] },
+}, "The smallest real system has a phone, one app server and one database.", (s) => [
+  s.send("phone", "server", "GET /feed"),
+  s.send("server", "db", "query", "data"),
+  s.send("db", "server"),
+  s.send("server", "phone"),
+])
+
+const fourActions = figure({
+  post: { kind: "mobile", label: "Post", at: [0, 0] },
+  follow: { kind: "mobile", label: "Follow", at: [0, 1] },
+  feed: { kind: "mobile", label: "Feed", at: [0, 2] },
+  comment: { kind: "mobile", label: "Comment", at: [0, 3] },
+  server: { kind: "server", label: "App server", at: [2, 2] },
+  db: { kind: "db", label: "Database", at: [4, 2] },
+  later: { kind: "service", label: "Messages, search, video", at: [4, 0] },
+}, "The first version has four user actions. Messages, search and video come in a later version.", (s) => [
+  s.send("post", "server"),
+  s.send("follow", "server"),
+  s.send("feed", "server"),
+  s.send("comment", "server"),
+  s.send("server", "db"),
+  s.down("later"),
+  s.note("later", "not now"),
+])
+
+const targets = figure({
+  phone: { kind: "mobile", label: "Phone", at: [0, 0] },
+  server: { kind: "server", label: "App server", at: [2, 0] },
+  db: { kind: "db", label: "Database", at: [4, 0] },
+}, "Each box gets a number. The app has 10 million daily users, the feed loads in under half a second, and every photo stays as long as the account does.", (s) => [
+  s.send("phone", "server"),
+  s.send("server", "db"),
+  s.note("phone", "10 million a day"),
+  s.note("server", "under 0.5 s"),
+  s.note("db", "keeps every photo"),
+])
+
+const questions = figure({
+  phone: { kind: "mobile", label: "Phone", at: [0, 0] },
+  server: { kind: "server", label: "App server", at: [2, 0] },
+  db: { kind: "db", label: "Database", at: [4, 0] },
+}, "Ask about the people and the traffic first. Which database to use can wait until you know the data.", (s) => [
+  s.send("phone", "server"),
+  s.send("server", "db"),
+  s.note("phone", "who uses it?"),
+  s.note("server", "busiest hour?"),
+  s.note("db", "tools? later"),
+])
+
+const roughNumbers = figure({
+  phone: { kind: "mobile", label: "Phone", at: [0, 0] },
+  server: { kind: "server", label: "App server", at: [2, 0] },
+  db: { kind: "db", label: "Database", at: [4, 0] },
+}, "Trace the rough numbers through the first design. About 2,300 feed requests a second all end at the database, so it runs out of room first.", (s) => [
+  s.send("phone", "server", "2,300/s"),
+  s.send("server", "db", "query", "data"),
+  s.focus("db"),
+  s.note("db", "runs out first"),
+])
+
+const standby = figure({
+  phone: { kind: "mobile", label: "Phone", at: [0, 1] },
+  server: { kind: "server", label: "App server", at: [2, 1] },
+  db: { kind: "db", label: "Database", at: [4, 0] },
+  spare: { kind: "db", label: "Standby copy", at: [4, 2] },
+}, "When the main database stops, a standby copy takes over, and the feed keeps working.", (s) => [
+  s.down("db"),
+  s.note("db", "stopped"),
+  s.send("phone", "server", "GET /feed"),
+  s.send("server", "spare", "query", "data"),
+  s.send("spare", "server"),
+  s.send("server", "phone"),
+])
+
+const twoProducts = figure({
+  phone: { kind: "mobile", label: "Photo app", at: [0, 0] },
+  feed: { kind: "server", label: "Feed server", at: [2, 0] },
+  cache: { kind: "cache", label: "Cache", at: [4, 0] },
+  bank: { kind: "client", label: "Bank app", at: [0, 2] },
+  payments: { kind: "server", label: "Payments server", at: [2, 2] },
+  primary: { kind: "db", label: "Primary database", at: [4, 2] },
+}, "The photo feed can read from a cache that is a few seconds old. A bank balance has to come from the primary database every time.", (s) => [
+  s.send("phone", "feed", "feed"),
+  s.send("feed", "cache", "read", "data"),
+  s.send("bank", "payments", "balance"),
+  s.send("payments", "primary", "read", "data"),
+  s.note("cache", "seconds old is fine"),
+  s.note("primary", "always the latest"),
+])
+
+const stackOverflow = figure({
+  visitors: { kind: "internet", label: "Visitors", at: [0, 0] },
+  lbs: { kind: "lb", label: "4 HAProxy", at: [2, 0] },
+  web: { kind: "server", label: "9 web servers", at: [4, 0] },
+  sql: { kind: "db", label: "4 SQL Servers", at: [6, 0] },
+  search: { kind: "nosql", label: "3 Elasticsearch", at: [0, 2] },
+  redis: { kind: "cache", label: "2 Redis", at: [2, 2] },
+  tags: { kind: "service", label: "3 tag engine", at: [4, 2] },
+  colorado: { kind: "db", label: "Colorado copy", at: [6, 2] },
+}, "Stack Overflow ran this setup in February 2016. Visitors reach 4 HAProxy load balancers, then 9 web servers that read from SQL Server, Redis, Elasticsearch and the tag engine. A second data center in Colorado keeps copies and can take over.", (s) => [
+  s.send("visitors", "lbs", "HTTPS"),
+  s.send("lbs", "web", "request"),
+  s.send("web", "sql", "query", "data"),
+  s.send("web", "redis", "cache", "data"),
+  s.send("web", "tags", "tags", "data"),
+  s.send("web", "search", "search", "data"),
+  s.send("sql", "colorado", "copy", "data"),
+  s.note("web", "1 could carry it"),
+])
+
+const tradeOff = figure({
+  phone: { kind: "mobile", label: "Phone", at: [0, 1] },
+  server: { kind: "server", label: "App server", at: [2, 1] },
+  cache: { kind: "cache", label: "Cache", at: [4, 0] },
+  db: { kind: "db", label: "Database", at: [4, 2] },
+}, "In the photo app, a new photo may reach followers a few seconds late. In return, most feed reads can come from a cache.", (s) => [
+  s.send("phone", "server"),
+  s.send("server", "cache", "feed", "data"),
+  s.send("server", "db", "new photo", "data"),
+  s.note("cache", "a few seconds old"),
+])
+
 
 const scene = defineScene({
   phone: { kind: "mobile", label: "Phone", at: [0, 0] },
@@ -103,6 +244,8 @@ export default defineLesson({
     builds a fleet spread across data centers on three continents for 10
     million people every day. Both teams built what they were asked to build.
 
+    ${twoSystems}
+
     The gap between those two systems comes from everything that one sentence
     left unsaid. It never mentioned how many people will open the app, how
     fast a screen needs to load, or what should happen when a hard drive gives
@@ -125,6 +268,8 @@ export default defineLesson({
     does not erase anyone's photos. Then
     ${cue("answer", "the rows come back, and the server sends the feed to the phone")}.
 
+    ${threeBoxes}
+
     There is nothing wrong with staying right here for a long time. One app
     server and one database can serve thousands of active users with room to
     spare. Later in this course, we place extra boxes into this drawing, like
@@ -144,6 +289,8 @@ export default defineLesson({
     - Users can follow other users.
     - Users can open a feed of recent photos from people they follow.
     - Users can leave a comment on a photo.
+
+    ${fourActions}
 
     Once that list is on the page, take a moment to trim it. Whether you are
     working through an hour-long design conversation or scoping a first
@@ -166,6 +313,8 @@ export default defineLesson({
     - **Availability.** What share of the year must the app stay reachable? An app that is up 99.9% of the time can be down for roughly 9 hours over a full year.
     - **Consistency.** After someone posts something new, how soon must everyone else see it? A friend can wait a few seconds for a new photo to appear in their feed, whereas a bank balance has to be exact on every read.
 
+    ${targets}
+
     Tightening any of these five numbers has a real cost in machines,
     complexity, or both. A good design does not chase the strictest number on
     the page. It meets what the product needs, and stops there.
@@ -181,6 +330,8 @@ export default defineLesson({
     on a bad day? How many people show up during the busiest hour of the
     evening? Would anyone mind if a new post took a few seconds to appear for
     followers?
+
+    ${questions}
 
     Questions about specific tools belong later in the conversation. Asking
     "should we use a SQL database?" before you know what the data looks like
@@ -208,6 +359,8 @@ export default defineLesson({
     bottleneck only shows up once you test your numbers against a concrete
     first design.
 
+    ${roughNumbers}
+
     In our photo app,
     ${cue("bottleneck", "the database is the first part to run out")}.
     Every feed load asks the database for fresh rows, and people scroll
@@ -224,6 +377,8 @@ export default defineLesson({
     design, when ${cue("dies", "the database stops")}, every request that
     needs stored data comes back as an error. Nothing else can step in,
     because there is only one database holding the rows.
+
+    ${standby}
 
     Any piece whose failure stops the whole product is a single point of
     failure. The usual fix is to run a second copy that can take over. Still,
@@ -242,6 +397,8 @@ export default defineLesson({
     to stay fast. A payments system cannot show an outdated balance, so it
     pays the extra cost of making every read see the latest write. Hand the
     same design to both products, and it fits one and fails the other.
+
+    ${twoProducts}
 
     That is also why stopping at "it depends" is not enough. Whenever a choice
     depends on the situation, name the exact factor it depends on, such as the
@@ -268,6 +425,8 @@ export default defineLesson({
     a database query. Three servers ran search through Elasticsearch, and
     three more ran a tag engine. Every machine had a spare, and a second data
     center in Colorado could take over from New York.
+
+    ${stackOverflow}
 
     On average, a question page rendered in about 23 ms. Craver also wrote
     that the whole site could run on a single web server, and had done so by
@@ -296,6 +455,8 @@ export default defineLesson({
     put it like this. The feed may show a new photo a few seconds after it is
     posted, and in return we can serve reads from caches and copies, so the
     feed stays fast during the evening rush.
+
+    ${tradeOff}
   `,
   quiz: [
     {

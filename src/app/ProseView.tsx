@@ -1,7 +1,7 @@
 import { Blockquote, H2, H3, InlineCode, List, P } from "@/components/ui/typography"
 import { Highlight } from "@/components/ui/highlight"
 import { LINK_CLASS } from "@/app/link-class"
-import { useSceneCue } from "@/scene"
+import { SceneFigure, useSceneCue } from "@/scene"
 import type { Block, Inline, Prose } from "@/content"
 import type { KeyboardEvent, ReactNode } from "react"
 
@@ -55,6 +55,8 @@ function renderBlock(block: Block, index: number) {
       return <Blockquote key={index} data-callout={block.kind}>{block.c.map(renderInline)}</Blockquote>
     case "code":
       return <pre key={index} data-lang={block.lang}><code>{block.v}</code></pre>
+    case "figure":
+      return <SceneFigure key={index} timeline={block.timeline} />
   }
 }
 

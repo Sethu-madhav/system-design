@@ -1,4 +1,7 @@
+import { compile, defineScene, type Action, type NodeDef, type StepKit, type Timeline } from "@/scene"
+
 const CUE = "\uE000"
+const FIGURE = "\uE001"
 
 interface CueRecord {
   readonly step: string
@@ -14,6 +17,26 @@ export interface CueToken<S extends string = string> {
 }
 
 export type CueFn<S extends string> = (step: S, text: string) => CueToken<S>
+
+declare const figureBrand: unique symbol
+
+export interface FigureToken {
+  readonly [figureBrand]: true
+}
+
+const figureData = new WeakMap<object, Timeline>()
+
+export function figure<const T extends Record<string, NodeDef>>(
+  nodes: T,
+  caption: string,
+  draw: (s: StepKit<Extract<keyof T, string>>) => Action<Extract<keyof T, string>>[],
+): FigureToken {
+  if (caption.trim() === "") fail("a figure needs a caption")
+  const timeline = compile(defineScene(nodes).steps((s) => ({ still: s.step(caption, ...draw(s)) })))
+  const token = Object.freeze({}) as FigureToken
+  figureData.set(token, timeline)
+  return token
+}
 
 export type Inline =
   | { readonly t: "text"; readonly v: string }
@@ -31,6 +54,7 @@ export type Block =
   | { readonly t: "ul" | "ol"; readonly items: readonly (readonly Inline[])[] }
   | { readonly t: "callout"; readonly kind: CalloutKind; readonly c: readonly Inline[] }
   | { readonly t: "code"; readonly lang: string; readonly v: string }
+  | { readonly t: "figure"; readonly caption: string; readonly timeline: Timeline }
 
 export interface Prose {
   readonly blocks: readonly Block[]
@@ -43,9 +67,12 @@ interface ParseState {
   next: number
 }
 
+type Part = CueToken | FigureToken
+
 type Segment =
   | { readonly kind: "group"; readonly lines: readonly string[] }
   | { readonly kind: "code"; readonly lang: string; readonly v: string }
+  | { readonly kind: "figure" }
 
 function fail(message: string): never {
   throw new Error(`prose: ${message}`)
@@ -118,6 +145,8 @@ export function blockText(block: Block): string {
       return block.items.map((item) => inlineText(item)).join("\n")
     case "code":
       return block.v
+    case "figure":
+      return block.caption
   }
 }
 
@@ -135,6 +164,7 @@ function parseInlines(src: string, line: string, state: ParseState): Inline[] {
 
   while (i < src.length) {
     const ch = src[i]
+    if (ch === FIGURE) fail("a figure must stand on its own line")
     if (ch === CUE) {
       flush()
       const record = state.records[state.next]
@@ -150,6 +180,7 @@ function parseInlines(src: string, line: string, state: ParseState): Inline[] {
       if (end === -1) fail("unclosed code span")
       const v = src.slice(i + 1, end)
       if (v.includes(CUE)) fail("cue inside code")
+      if (v.includes(FIGURE)) fail("figure inside code")
       out.push({ t: "code", v })
       i = end + 1
       continue
@@ -178,6 +209,7 @@ function parseInlines(src: string, line: string, state: ParseState): Inline[] {
       if (paren === -1) fail(`unsupported syntax "${line}"`)
       const href = src.slice(close + 2, paren)
       if (href.includes(CUE)) fail("cue inside link url")
+      if (href.includes(FIGURE)) fail("figure inside link url")
       if (/[\s(]/.test(href)) fail(`link url has a space or parenthesis "${href}"`)
       if (!href.startsWith("https://") && !href.startsWith("#/")) {
         fail("link must start with https:// or #/")
@@ -222,12 +254,14 @@ function scanSegments(lines: readonly string[]): Segment[] {
     const line = lines[i]
     if (line.startsWith("```")) {
       if (line.includes(CUE)) fail("cue inside code")
+      if (line.includes(FIGURE)) fail("figure inside code")
       const lang = line.slice(3).trim()
       let end = i + 1
       while (end < lines.length && lines[end] !== "```") end += 1
       if (end >= lines.length) fail("unclosed code fence")
       const content = lines.slice(i + 1, end)
       if (content.some((inner) => inner.includes(CUE))) fail("cue inside code")
+      if (content.some((inner) => inner.includes(FIGURE))) fail("figure inside code")
       segments.push({ kind: "code", lang, v: content.join("\n") })
       i = end + 1
       continue
@@ -241,11 +275,16 @@ function scanSegments(lines: readonly string[]): Segment[] {
       i += 1
       continue
     }
+    if (line === FIGURE) {
+      segments.push({ kind: "figure" })
+      i += 1
+      continue
+    }
 
     const group: string[] = []
     while (i < lines.length) {
       const current = lines[i]
-      if (isBlank(current) || current.startsWith("```") || isHeading(current)) break
+      if (isBlank(current) || current.startsWith("```") || isHeading(current) || current === FIGURE) break
       group.push(current)
       i += 1
     }
@@ -356,23 +395,33 @@ function unescapeRaw(raw: string): string {
   return raw.replace(/\\([`$\\])/g, "$1")
 }
 
-export function md(template: TemplateStringsArray, ...cues: CueToken[]): Prose {
+export function md(template: TemplateStringsArray, ...parts: Part[]): Prose {
   const strings = template.raw.map(unescapeRaw)
   for (const part of strings) {
-    if (part.includes(CUE)) fail("reserved character in text")
+    if (part.includes(CUE) || part.includes(FIGURE)) fail("reserved character in text")
   }
 
   const records: CueRecord[] = []
-  for (const token of cues) {
+  const figures: Timeline[] = []
+  const marks: string[] = []
+  for (const token of parts) {
     const record = cueData.get(token)
-    if (record === undefined) fail("interpolation is not a cue")
-    records.push(record)
+    const timeline = figureData.get(token)
+    if (record !== undefined) {
+      records.push(record)
+      marks.push(CUE)
+    } else if (timeline !== undefined) {
+      figures.push(timeline)
+      marks.push(FIGURE)
+    } else {
+      fail("interpolation is not a cue or a figure")
+    }
   }
 
   let text = ""
   for (let i = 0; i < strings.length; i += 1) {
     text += strings[i]
-    if (i < cues.length) text += CUE
+    if (i < marks.length) text += marks[i]
   }
 
   const segments = scanSegments(dedent(text))
@@ -381,15 +430,21 @@ export function md(template: TemplateStringsArray, ...cues: CueToken[]): Prose {
   const state: ParseState = { records, next: 0 }
   const ids = new Set<string>()
   const blocks: Block[] = []
+  let nextFigure = 0
   for (const segment of segments) {
     if (segment.kind === "code") {
       blocks.push({ t: "code", lang: segment.lang, v: segment.v })
+    } else if (segment.kind === "figure") {
+      const timeline = figures[nextFigure]
+      nextFigure += 1
+      blocks.push({ t: "figure", caption: timeline.steps[0].caption, timeline })
     } else {
       blocks.push(parseGroup(segment.lines, state, ids))
     }
   }
 
   if (state.next !== records.length) fail("cue was not placed in the text")
+  if (nextFigure !== figures.length) fail("figure was not placed in the text")
 
   let words = 0
   for (const block of blocks) {

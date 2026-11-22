@@ -1,5 +1,5 @@
 export { defineScene } from "./model"
-export type { Scene, NodeKind, NodeDef, PacketTone } from "./model"
+export type { Action, Scene, NodeKind, NodeDef, PacketTone, StepKit } from "./model"
 export { compile, SceneError } from "./timeline"
 export type { Timeline } from "./timeline"
-export { SceneProvider, ScenePlayer, useSceneCue } from "./ScenePlayer"
+export { SceneFigure, SceneProvider, ScenePlayer, useSceneCue } from "./ScenePlayer"
