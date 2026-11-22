@@ -1,4 +1,120 @@
-import { defineLesson, defineScene, md } from "@/content/author"
+import { defineLesson, defineScene, figure, md } from "@/content/author"
+
+const slowEvening = figure({
+  phone: { kind: "mobile", label: "Phone", at: [0, 0] },
+  server: { kind: "server", label: "App server", at: [2, 0] },
+  db: { kind: "db", label: "Database", at: [4, 0] },
+}, "The photo app runs on one app server and one database. Every evening the server reaches 95% CPU, and feeds take seconds to load.", (s) => [
+  s.send("phone", "server", "GET /feed"),
+  s.send("server", "db", "query", "data"),
+  s.focus("server"),
+  s.note("server", "CPU 95%"),
+])
+
+const quietOrBusy = figure({
+  quiet: { kind: "mobile", label: "1 user at 4 am", at: [0, 0] },
+  calm: { kind: "server", label: "App server", at: [2, 0] },
+  busy: { kind: "mobile", label: "Everyone at 9 pm", at: [0, 2] },
+  full: { kind: "server", label: "App server", at: [2, 2] },
+}, "The feed loads in 80 ms at 4 am and slows down only at 9 pm. Each request is lean, so the app has a scalability problem.", (s) => [
+  s.send("quiet", "calm"),
+  s.send("busy", "full"),
+  s.note("calm", "80 ms"),
+  s.note("full", "CPU 95%"),
+])
+
+const scaleUp = figure({
+  phone: { kind: "mobile", label: "Phone", at: [0, 0] },
+  server: { kind: "server", label: "Bigger server", at: [2, 0] },
+  db: { kind: "db", label: "Database", at: [4, 0] },
+}, "Scaling up moves the same app onto a machine with 4 times the cores. Evening CPU drops from 95% to about 25%, and the code does not change.", (s) => [
+  s.send("phone", "server", "GET /feed"),
+  s.send("server", "db"),
+  s.note("server", "4x cores, 25%"),
+])
+
+const scaleOut = figure({
+  phone: { kind: "mobile", label: "Phone", at: [0, 2] },
+  lb: { kind: "lb", label: "Load balancer", at: [2, 2] },
+  one: { kind: "server", label: "Server 1", at: [5, 0] },
+  two: { kind: "server", label: "Server 2", at: [5, 2] },
+  three: { kind: "server", label: "Server 3", at: [5, 4] },
+}, "Scaling out runs the same app on 3 servers behind a load balancer. Each server gets about a third of the requests and sits near 32% CPU.", (s) => [
+  s.send("phone", "lb", "GET /feed"),
+  s.send("lb", "one"),
+  s.send("lb", "two"),
+  s.send("lb", "three"),
+  s.note("one", "32%"),
+  s.note("two", "32%"),
+  s.note("three", "32%"),
+])
+
+const stateless = figure({
+  one: { kind: "server", label: "Server 1", at: [0, 0] },
+  two: { kind: "server", label: "Server 2", at: [0, 1] },
+  three: { kind: "server", label: "Server 3", at: [0, 2] },
+  sessions: { kind: "cache", label: "Shared sessions", at: [3, 1] },
+}, "Stateless servers keep no sessions of their own. Every server reads sessions from one shared store, so any server can answer any user.", (s) => [
+  s.send("one", "sessions"),
+  s.send("two", "sessions"),
+  s.send("three", "sessions"),
+])
+
+const oneFails = figure({
+  lb: { kind: "lb", label: "Load balancer", at: [0, 2] },
+  one: { kind: "server", label: "Server 1", at: [3, 0] },
+  two: { kind: "server", label: "Server 2", at: [3, 2] },
+  three: { kind: "server", label: "Server 3", at: [3, 4] },
+}, "When Server 1 fails, the load balancer stops sending it traffic. The other two servers climb from 32% to about 48% CPU, and users notice nothing.", (s) => [
+  s.down("one"),
+  s.note("one", "failed"),
+  s.send("lb", "two"),
+  s.send("lb", "three"),
+  s.note("two", "48%"),
+  s.note("three", "48%"),
+])
+
+const bottleneck = figure({
+  one: { kind: "server", label: "Server 1", at: [0, 0] },
+  two: { kind: "server", label: "Server 2", at: [0, 1] },
+  three: { kind: "server", label: "Server 3", at: [0, 2] },
+  db: { kind: "db", label: "Database", at: [3, 1] },
+}, "All 3 servers still query one shared database. It took the whole 4x rise in traffic, so its CPU is now at 90%.", (s) => [
+  s.send("one", "db"),
+  s.send("two", "db"),
+  s.send("three", "db"),
+  s.focus("db"),
+  s.note("db", "CPU 90%"),
+])
+
+const figma = figure({
+  app: { kind: "server", label: "App servers", at: [0, 2] },
+  pooler: { kind: "proxy", label: "Pooler", at: [2, 2] },
+  replica: { kind: "db", label: "Read replicas", at: [3, 0] },
+  main: { kind: "db", label: "Main Postgres", at: [5, 0] },
+  parts: { kind: "db", label: "Table groups", at: [5, 2] },
+  shards: { kind: "db", label: "Sharded tables", at: [5, 4] },
+}, "Figma's database changed shape between 2020 and 2023. Thousands of stateless app servers reach Postgres through a connection pooler. The main database moved to the largest machine and gained read replicas. Groups of tables then moved to about a dozen databases of their own, and in September 2023 the first table was split across shards.", (s) => [
+  s.send("app", "pooler"),
+  s.send("pooler", "main"),
+  s.send("pooler", "parts"),
+  s.send("pooler", "shards"),
+  s.send("main", "replica", "copy"),
+  s.note("main", "largest machine"),
+])
+
+const reviewPlan = figure({
+  one: { kind: "server", label: "Feed 1", at: [0, 0] },
+  two: { kind: "server", label: "Feed 2", at: [0, 1] },
+  three: { kind: "server", label: "Feed 3", at: [0, 2] },
+  db: { kind: "db", label: "Larger database", at: [3, 1] },
+}, "The plan runs at least 3 stateless feed servers, so one can fail at peak hour. The database stays on a larger machine and gets read copies before its CPU passes 70%.", (s) => [
+  s.send("one", "db"),
+  s.send("two", "db"),
+  s.send("three", "db"),
+  s.note("db", "copies before 70%"),
+])
+
 
 const scene = defineScene({
   phone: { kind: "mobile", label: "Phone", at: [0, 1] },
@@ -130,6 +246,8 @@ export default defineLesson({
     why. Once a server sits near 100% busy, every new request waits in a
     growing queue.
 
+    ${slowEvening}
+
     At this point, the team has two ways to add room. They can move the app
     onto a larger machine, known as scaling up. Or they can run the app on
     several machines at once, known as scaling out. This lesson walks through
@@ -149,6 +267,8 @@ export default defineLesson({
     Our photo app loads a feed in 80 ms at 4 am, so the team knows they are
     dealing with a scalability problem.
 
+    ${quietOrBusy}
+
     > pitfall: Adding servers to solve a performance problem raises your bill without helping the user. Time a single request on a quiet machine before you add hardware.
 
     ## Scaling up
@@ -159,6 +279,8 @@ export default defineLesson({
     one box.
     ${cue("up", "The team moves the photo app to a machine with 4 times the cores")},
     and the same evening traffic drops from 95% CPU down to about 25%.
+
+    ${scaleUp}
 
     When a bigger machine is available, scaling up is the fastest and calmest
     fix you can make. Still, it comes with four real limits.
@@ -192,6 +314,8 @@ export default defineLesson({
     CPU crosses a mark like 70%, so the new server boots before queues grow,
     and turns spare machines off during quiet overnight hours.
 
+    ${scaleOut}
+
     Horizontal scaling supports much higher growth, though it adds three
     ongoing responsibilities.
 
@@ -224,6 +348,8 @@ export default defineLesson({
     data and keep it safe. That is why scaling out a database is far harder
     than scaling out app servers, and why all of chapter 6 focuses on data.
 
+    ${stateless}
+
     ## When a server fails
 
     A single server is always a single point of failure. No matter how many
@@ -245,6 +371,8 @@ export default defineLesson({
     enough to build queues yet still able to stay up, and keeping even more
     headroom keeps latency calm during a failure.
 
+    ${oneFails}
+
     ## The bottleneck moves
 
     Adding app servers does not add any capacity to the parts those servers
@@ -260,6 +388,8 @@ export default defineLesson({
     next bottleneck in your notes before traffic gets there. For our photo
     app, the next relief comes from putting a cache in front of the database
     for popular feeds and adding read copies of the database.
+
+    ${bottleneck}
 
     ## How Figma scaled its database
 
@@ -312,6 +442,8 @@ export default defineLesson({
     bought valuable time before hitting a hard ceiling, while scaling out the
     stateful database took years of careful engineering.
 
+    ${figma}
+
     ## In a design review
 
     A few practical questions keep scaling discussions grounded in any review.
@@ -327,6 +459,8 @@ export default defineLesson({
     stateless and run at least 3 of them so any single machine can fail at
     peak hour. Keep the database on a larger machine for now because it takes
     every write, and add read copies before its CPU climbs past 70%.
+
+    ${reviewPlan}
   `,
   quiz: [
     {
